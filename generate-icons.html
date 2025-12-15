@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Icons</title>
+</head>
+<body>
+    <h1>Daily Battle Icon Generator</h1>
+    <p>Click each button to download the icon</p>
+    <div id="buttons"></div>
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawIcon(size) {
+            canvas.width = size;
+            canvas.height = size;
+
+            // Background gradient
+            const bgGradient = ctx.createLinearGradient(0, 0, size, size);
+            bgGradient.addColorStop(0, '#1e1b4b');
+            bgGradient.addColorStop(0.5, '#312e81');
+            bgGradient.addColorStop(1, '#1e1b4b');
+
+            // Draw rounded rectangle
+            const radius = size * 0.2;
+            ctx.beginPath();
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(size - radius, 0);
+            ctx.quadraticCurveTo(size, 0, size, radius);
+            ctx.lineTo(size, size - radius);
+            ctx.quadraticCurveTo(size, size, size - radius, size);
+            ctx.lineTo(radius, size);
+            ctx.quadraticCurveTo(0, size, 0, size - radius);
+            ctx.lineTo(0, radius);
+            ctx.quadraticCurveTo(0, 0, radius, 0);
+            ctx.closePath();
+            ctx.fillStyle = bgGradient;
+            ctx.fill();
+
+            // Scale factor
+            const s = size / 512;
+
+            // Draw swords emoji style
+            ctx.font = `${size * 0.6}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('⚔️', size/2, size/2);
+        }
+
+        sizes.forEach(size => {
+            const btn = document.createElement('button');
+            btn.textContent = `Download ${size}x${size}`;
+            btn.style.margin = '10px';
+            btn.style.padding = '10px 20px';
+            btn.onclick = () => {
+                drawIcon(size);
+                const link = document.createElement('a');
+                link.download = `icon-${size}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            };
+            document.getElementById('buttons').appendChild(btn);
+        });
+
+        // Download all button
+        const allBtn = document.createElement('button');
+        allBtn.textContent = 'Download All';
+        allBtn.style.margin = '10px';
+        allBtn.style.padding = '10px 20px';
+        allBtn.style.backgroundColor = '#7c3aed';
+        allBtn.style.color = 'white';
+        allBtn.onclick = () => {
+            sizes.forEach((size, i) => {
+                setTimeout(() => {
+                    drawIcon(size);
+                    const link = document.createElement('a');
+                    link.download = `icon-${size}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                }, i * 500);
+            });
+        };
+        document.getElementById('buttons').appendChild(allBtn);
+    </script>
+</body>
+</html>

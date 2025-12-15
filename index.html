@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#1e1b4b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Daily Battle">
+    <title>Daily Battle</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Setup Screen -->
+        <div id="setup-screen" class="screen">
+            <div class="setup-container">
+                <div class="setup-header">
+                    <span class="app-icon">⚔️</span>
+                    <h1>Daily Battle</h1>
+                    <p class="subtitle">Start je gevecht tegen slechte gewoontes</p>
+                </div>
+
+                <div class="setup-form">
+                    <div class="form-group">
+                        <label for="habit-name">Gewoonte Naam</label>
+                        <input type="text" id="habit-name" placeholder="bijv. Goede houding">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="habit-question">Check-in Vraag</label>
+                        <input type="text" id="habit-question" placeholder="bijv. Zit je rechtop?">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Cooldown Periode</label>
+                        <div class="cooldown-options">
+                            <button class="cooldown-btn active" data-minutes="5">5 min</button>
+                            <button class="cooldown-btn" data-minutes="10">10 min</button>
+                            <button class="cooldown-btn" data-minutes="15">15 min</button>
+                            <button class="cooldown-btn" data-minutes="30">30 min</button>
+                        </div>
+                    </div>
+
+                    <button id="start-battle-btn" class="primary-btn" disabled>Start je Battle</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main App -->
+        <div id="main-app" class="screen hidden">
+            <!-- Header -->
+            <header class="app-header">
+                <div class="header-left">
+                    <span class="app-icon-small">⚔️</span>
+                    <span id="header-habit-name">Goede houding</span>
+                </div>
+                <div class="header-right">
+                    <span id="header-streak" class="streak-badge">Streak: 0 🔥</span>
+                    <button id="settings-btn" class="icon-btn">⚙️</button>
+                </div>
+            </header>
+
+            <!-- Tab Content -->
+            <main id="tab-content">
+                <!-- Battle Tab -->
+                <div id="battle-tab" class="tab-panel">
+                    <div class="score-card">
+                        <h2 id="battle-question" class="question">Zit je rechtop?</h2>
+
+                        <div class="score-display">
+                            <span id="good-count" class="good-score">0</span>
+                            <span class="vs">vs</span>
+                            <span id="bad-count" class="bad-score">0</span>
+                        </div>
+
+                        <div id="balance-display" class="balance neutral">
+                            <span id="balance-value">0</span>
+                        </div>
+
+                        <div class="progress-container">
+                            <span class="progress-label">Slecht</span>
+                            <div class="progress-bar">
+                                <div id="progress-fill" class="progress-fill"></div>
+                            </div>
+                            <span class="progress-label">Goed</span>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button id="yes-btn" class="action-btn yes-btn">
+                            <span class="btn-icon">✓</span>
+                            <span class="btn-text">Ja!</span>
+                        </button>
+                        <button id="no-btn" class="action-btn no-btn">
+                            <span class="btn-icon">✗</span>
+                            <span class="btn-text">Nee</span>
+                        </button>
+                    </div>
+
+                    <div id="cooldown-display" class="cooldown-display hidden">
+                        <span class="cooldown-icon">⏱️</span>
+                        <span>Volgende check-in over</span>
+                        <span id="cooldown-timer" class="cooldown-timer">0:00</span>
+                    </div>
+
+                    <button id="undo-btn" class="undo-btn hidden">
+                        <span>↩️</span> Laatste ongedaan maken
+                    </button>
+
+                    <div class="comparison-card">
+                        <h3>Vandaag vs Gisteren</h3>
+                        <div class="comparison-grid">
+                            <div class="comparison-item">
+                                <span class="comparison-label">Vandaag</span>
+                                <div id="today-color" class="comparison-box"></div>
+                                <span id="today-balance" class="comparison-value">0</span>
+                            </div>
+                            <div class="comparison-item">
+                                <span class="comparison-label">Gisteren</span>
+                                <div id="yesterday-color" class="comparison-box"></div>
+                                <span id="yesterday-balance" class="comparison-value">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Tab -->
+                <div id="stats-tab" class="tab-panel hidden">
+                    <div class="streak-card">
+                        <span class="streak-emoji">🔥</span>
+                        <span id="streak-count" class="streak-number">0</span>
+                        <span class="streak-label">dagen streak</span>
+                    </div>
+
+                    <div class="week-card">
+                        <h3><span class="card-icon">📊</span> Deze Week</h3>
+                        <div id="week-grid" class="week-grid">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
+
+                    <div class="calendar-card">
+                        <div class="calendar-header">
+                            <button id="prev-month" class="nav-btn">◀</button>
+                            <span id="calendar-title">December 2024</span>
+                            <button id="next-month" class="nav-btn">▶</button>
+                        </div>
+                        <div class="calendar-weekdays">
+                            <span>Zo</span><span>Ma</span><span>Di</span><span>Wo</span><span>Do</span><span>Vr</span><span>Za</span>
+                        </div>
+                        <div id="calendar-grid" class="calendar-grid">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Bottom Navigation -->
+            <nav class="bottom-nav">
+                <button class="nav-tab active" data-tab="battle">
+                    <span class="tab-icon">🏆</span>
+                    <span class="tab-label">Battle</span>
+                </button>
+                <button class="nav-tab" data-tab="stats">
+                    <span class="tab-icon">📈</span>
+                    <span class="tab-label">Statistieken</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Instellingen</h2>
+                    <button id="close-settings" class="close-btn">✕</button>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Gewoonte Configuratie</h3>
+
+                    <div class="form-group">
+                        <label for="settings-name">Naam</label>
+                        <input type="text" id="settings-name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="settings-question">Vraag</label>
+                        <input type="text" id="settings-question">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Cooldown</label>
+                        <div class="cooldown-options" id="settings-cooldown">
+                            <button class="cooldown-btn" data-minutes="5">5 min</button>
+                            <button class="cooldown-btn" data-minutes="10">10 min</button>
+                            <button class="cooldown-btn" data-minutes="15">15 min</button>
+                            <button class="cooldown-btn" data-minutes="30">30 min</button>
+                        </div>
+                    </div>
+
+                    <button id="save-settings" class="primary-btn">Opslaan</button>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Data Beheer</h3>
+
+                    <button id="export-data" class="secondary-btn">
+                        <span>📤</span> Exporteer Data
+                    </button>
+
+                    <label class="secondary-btn file-input-label">
+                        <span>📥</span> Importeer Data
+                        <input type="file" id="import-data" accept=".json" hidden>
+                    </label>
+
+                    <button id="clear-data" class="danger-btn">
+                        <span>🗑️</span> Wis Alle Data
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Install Banner -->
+        <div id="install-banner" class="install-banner hidden">
+            <div class="install-content">
+                <span class="install-icon">⚔️</span>
+                <div class="install-text">
+                    <strong>Installeer Daily Battle</strong>
+                    <span>Voeg toe aan je startscherm</span>
+                </div>
+            </div>
+            <div class="install-buttons">
+                <button id="install-later" class="install-btn-later">Later</button>
+                <button id="install-now" class="install-btn-now">Installeren</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
