@@ -72,10 +72,26 @@ const BATTLE_PRESETS = [
 // Notification settings
 let notificationSettings = {
     enabled: false,
-    intervalHours: 2
+    intervalIndex: 2, // Index in INTERVAL_OPTIONS
+    randomTiming: false
 };
 
+// Interval options: 1h, 2h, 3h, 4h, 6h, 8h, 12h, 24h, 3 days, 1 week
+const INTERVAL_OPTIONS = [
+    { hours: 1, label: 'Elk uur' },
+    { hours: 2, label: 'Elke 2 uur' },
+    { hours: 3, label: 'Elke 3 uur' },
+    { hours: 4, label: 'Elke 4 uur' },
+    { hours: 6, label: 'Elke 6 uur' },
+    { hours: 8, label: 'Elke 8 uur' },
+    { hours: 12, label: 'Elke 12 uur' },
+    { hours: 24, label: 'Elke 24 uur' },
+    { hours: 72, label: 'Elke 3 dagen' },
+    { hours: 168, label: '1x per week' }
+];
+
 let notificationInterval = null;
+let nextNotificationTime = null;
 
 // State
 let state = {
@@ -1018,7 +1034,20 @@ function loadNotificationSettings() {
     try {
         const saved = localStorage.getItem(NOTIFICATION_SETTINGS_KEY);
         if (saved) {
-            notificationSettings = JSON.parse(saved);
+            const parsed = JSON.parse(saved);
+            // Migration from old format
+            if (parsed.intervalHours !== undefined && parsed.intervalIndex === undefined) {
+                const oldHours = parsed.intervalHours;
+                const idx = INTERVAL_OPTIONS.findIndex(o => o.hours === oldHours);
+                notificationSettings = {
+                    enabled: parsed.enabled || false,
+                    intervalIndex: idx >= 0 ? idx : 2,
+                    randomTiming: false
+                };
+                saveNotificationSettings();
+            } else {
+                notificationSettings = parsed;
+            }
         }
     } catch (e) {
         console.error('Failed to load notification settings:', e);
@@ -1071,58 +1100,105 @@ function showNotification(battle) {
     };
 }
 
-function startNotificationScheduler() {
+function getNextNotificationDelay() {
+    const option = INTERVAL_OPTIONS[notificationSettings.intervalIndex];
+    const baseMs = option.hours * 60 * 60 * 1000;
+
+    if (notificationSettings.randomTiming) {
+        // Random time between 0 and the full interval
+        return Math.random() * baseMs;
+    }
+
+    return baseMs;
+}
+
+function scheduleNextNotification() {
     if (notificationInterval) {
-        clearInterval(notificationInterval);
+        clearTimeout(notificationInterval);
+        notificationInterval = null;
     }
 
     if (!notificationSettings.enabled || state.battles.length === 0) return;
 
-    const intervalMs = notificationSettings.intervalHours * 60 * 60 * 1000;
+    const delay = getNextNotificationDelay();
+    nextNotificationTime = Date.now() + delay;
 
-    notificationInterval = setInterval(() => {
-        // Pick a random battle or the first one
+    notificationInterval = setTimeout(() => {
+        // Pick a random battle
         const battle = state.battles[Math.floor(Math.random() * state.battles.length)];
         showNotification(battle);
-    }, intervalMs);
+
+        // Schedule next notification
+        scheduleNextNotification();
+    }, delay);
+}
+
+function startNotificationScheduler() {
+    scheduleNextNotification();
+}
+
+function updateSliderLabel() {
+    const slider = document.getElementById('notification-slider');
+    const label = document.getElementById('slider-value');
+    if (slider && label) {
+        const option = INTERVAL_OPTIONS[slider.value];
+        label.textContent = option.label;
+    }
 }
 
 function initNotifications() {
     loadNotificationSettings();
 
     const enabledCheckbox = document.getElementById('notifications-enabled');
-    const intervalBtns = document.querySelectorAll('.interval-btn');
+    const slider = document.getElementById('notification-slider');
+    const randomCheckbox = document.getElementById('random-timing');
 
     // Set initial state
-    enabledCheckbox.checked = notificationSettings.enabled;
-    intervalBtns.forEach(btn => {
-        btn.classList.toggle('active', parseInt(btn.dataset.hours) === notificationSettings.intervalHours);
-    });
+    if (enabledCheckbox) {
+        enabledCheckbox.checked = notificationSettings.enabled;
+    }
 
-    enabledCheckbox.addEventListener('change', async () => {
-        if (enabledCheckbox.checked) {
-            const granted = await requestNotificationPermission();
-            if (!granted) {
-                enabledCheckbox.checked = false;
-                alert('Notificaties zijn geblokkeerd. Schakel ze in via je browserinstellingen.');
-                return;
-            }
-        }
+    if (slider) {
+        slider.value = notificationSettings.intervalIndex;
+        updateSliderLabel();
 
-        notificationSettings.enabled = enabledCheckbox.checked;
-        saveNotificationSettings();
-        startNotificationScheduler();
-    });
+        slider.addEventListener('input', () => {
+            updateSliderLabel();
+        });
 
-    intervalBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            intervalBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            notificationSettings.intervalHours = parseInt(btn.dataset.hours);
+        slider.addEventListener('change', () => {
+            notificationSettings.intervalIndex = parseInt(slider.value);
             saveNotificationSettings();
             startNotificationScheduler();
         });
-    });
+    }
+
+    if (randomCheckbox) {
+        randomCheckbox.checked = notificationSettings.randomTiming;
+
+        randomCheckbox.addEventListener('change', () => {
+            notificationSettings.randomTiming = randomCheckbox.checked;
+            saveNotificationSettings();
+            startNotificationScheduler();
+        });
+    }
+
+    if (enabledCheckbox) {
+        enabledCheckbox.addEventListener('change', async () => {
+            if (enabledCheckbox.checked) {
+                const granted = await requestNotificationPermission();
+                if (!granted) {
+                    enabledCheckbox.checked = false;
+                    alert('Notificaties zijn geblokkeerd. Schakel ze in via je browserinstellingen.');
+                    return;
+                }
+            }
+
+            notificationSettings.enabled = enabledCheckbox.checked;
+            saveNotificationSettings();
+            startNotificationScheduler();
+        });
+    }
 
     // Start scheduler if enabled
     startNotificationScheduler();

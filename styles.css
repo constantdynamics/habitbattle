@@ -1100,7 +1100,72 @@ html, body {
     transform: translateX(22px);
 }
 
-/* Interval Buttons */
+/* Notification Slider */
+.slider-container {
+    margin-top: 8px;
+}
+
+.notification-slider {
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--purple-border);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+}
+
+.notification-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--purple-accent);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s;
+}
+
+.notification-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+}
+
+.notification-slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--purple-accent);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.slider-value {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.slider-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.setting-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    line-height: 1.4;
+}
+
+/* Interval Buttons (legacy, keeping for compatibility) */
 .interval-btn {
     flex: 1;
     padding: 12px 8px;
