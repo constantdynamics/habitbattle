@@ -23,6 +23,66 @@
     --bad-color: #f87171;
 }
 
+/* Theme: Blue */
+[data-theme="blue"] {
+    --bg-primary: #0c1929;
+    --bg-secondary: #1e3a5f;
+    --purple-accent: #3b82f6;
+    --purple-light: #93c5fd;
+    --purple-border: #1d4ed8;
+    --text-secondary: #93c5fd;
+}
+
+/* Theme: Green */
+[data-theme="green"] {
+    --bg-primary: #052e16;
+    --bg-secondary: #14532d;
+    --purple-accent: #22c55e;
+    --purple-light: #86efac;
+    --purple-border: #15803d;
+    --text-secondary: #86efac;
+}
+
+/* Theme: Red */
+[data-theme="red"] {
+    --bg-primary: #2a0a0a;
+    --bg-secondary: #450a0a;
+    --purple-accent: #ef4444;
+    --purple-light: #fca5a5;
+    --purple-border: #b91c1c;
+    --text-secondary: #fca5a5;
+}
+
+/* Theme: Orange */
+[data-theme="orange"] {
+    --bg-primary: #2d1810;
+    --bg-secondary: #431407;
+    --purple-accent: #f97316;
+    --purple-light: #fdba74;
+    --purple-border: #c2410c;
+    --text-secondary: #fdba74;
+}
+
+/* Theme: Pink */
+[data-theme="pink"] {
+    --bg-primary: #2d1227;
+    --bg-secondary: #4a1d42;
+    --purple-accent: #ec4899;
+    --purple-light: #f9a8d4;
+    --purple-border: #be185d;
+    --text-secondary: #f9a8d4;
+}
+
+/* Theme: Dark */
+[data-theme="dark"] {
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #171717;
+    --purple-accent: #525252;
+    --purple-light: #a3a3a3;
+    --purple-border: #404040;
+    --text-secondary: #a3a3a3;
+}
+
 html, body {
     height: 100%;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -906,9 +966,16 @@ html, body {
     gap: 12px;
 }
 
+/* Two-column grid for battles */
+.battles-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
 .battles-list {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
 }
 
@@ -916,9 +983,11 @@ html, body {
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid var(--purple-border);
     border-radius: 16px;
-    padding: 16px;
+    padding: 12px;
     cursor: pointer;
     transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
 }
 
 .battle-card:hover {
@@ -930,40 +999,57 @@ html, body {
     transform: scale(0.98);
 }
 
+/* Large color block at top of card */
+.battle-card-color {
+    width: 100%;
+    height: 60px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
 .battle-card-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
 }
 
 .battle-card-title {
-    font-size: 18px;
+    font-size: 14px;
     font-weight: 600;
+    line-height: 1.2;
+    flex: 1;
 }
 
 .battle-card-streak {
-    font-size: 14px;
+    font-size: 12px;
     color: var(--orange-primary);
+    white-space: nowrap;
 }
 
 .battle-card-question {
-    font-size: 14px;
+    font-size: 11px;
     color: var(--text-secondary);
-    margin-bottom: 12px;
+    margin-bottom: 8px;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .battle-card-stats {
     display: flex;
     align-items: center;
-    gap: 16px;
+    justify-content: center;
+    margin-top: auto;
 }
 
 .battle-card-score {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 16px;
+    gap: 6px;
+    font-size: 14px;
     font-weight: 600;
 }
 
@@ -977,14 +1063,191 @@ html, body {
 
 .battle-card-score .vs {
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: 10px;
 }
 
-.battle-card-color {
+/* Sort Menu */
+.sort-menu {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.sort-menu.hidden {
+    display: none;
+}
+
+.sort-option {
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--purple-border);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.sort-option.active {
+    background: var(--purple-accent);
+    border-color: var(--purple-accent);
+    color: var(--text-primary);
+}
+
+.sort-option:hover:not(.active) {
+    border-color: var(--purple-accent);
+}
+
+/* Calendar Overview */
+.calendar-overview-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+}
+
+.calendar-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    padding: 0 20px 20px;
+}
+
+.calendar-overview-day {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 500;
+    transition: transform 0.2s;
+}
+
+.calendar-overview-day:hover:not(.empty) {
+    transform: scale(1.1);
+}
+
+.calendar-overview-day.empty {
+    background: transparent;
+}
+
+.calendar-overview-day.today {
+    outline: 2px solid var(--purple-accent);
+    outline-offset: -2px;
+}
+
+.calendar-overview-day .day-number {
+    font-size: 10px;
+    opacity: 0.8;
+}
+
+.calendar-overview-day .day-score {
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.calendar-legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--purple-border);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+}
+
+.legend-color.bad {
+    background: var(--bad-color);
+}
+
+.legend-color.neutral {
+    background: #808080;
+}
+
+.legend-color.good {
+    background: var(--good-color);
+}
+
+/* Theme Picker */
+.theme-list {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.theme-option {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--purple-border);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.theme-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.theme-option.active {
+    border-color: var(--purple-accent);
+    background: rgba(124, 58, 237, 0.2);
+}
+
+.theme-preview {
     width: 40px;
     height: 40px;
     border-radius: 8px;
-    margin-left: auto;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.theme-preview.purple {
+    background: linear-gradient(135deg, #1e1b4b, #7c3aed);
+}
+
+.theme-preview.blue {
+    background: linear-gradient(135deg, #0c1929, #3b82f6);
+}
+
+.theme-preview.green {
+    background: linear-gradient(135deg, #052e16, #22c55e);
+}
+
+.theme-preview.red {
+    background: linear-gradient(135deg, #2a0a0a, #ef4444);
+}
+
+.theme-preview.orange {
+    background: linear-gradient(135deg, #2d1810, #f97316);
+}
+
+.theme-preview.pink {
+    background: linear-gradient(135deg, #2d1227, #ec4899);
+}
+
+.theme-preview.dark {
+    background: linear-gradient(135deg, #0a0a0a, #525252);
 }
 
 .add-battle-btn {
@@ -1286,7 +1549,7 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: burst-scale 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    animation: burst-scale 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 .burst-cloud::before {
@@ -1317,7 +1580,7 @@ html, body {
         2% 8%,
         39% 15%
     );
-    animation: burst-rotate 0.6s ease-out;
+    animation: burst-rotate 1.2s ease-out;
 }
 
 .burst-cloud.yeah::before {
@@ -1349,7 +1612,7 @@ html, body {
         5% 80%, 25% 58%, 0% 60%, 22% 48%, 0% 40%, 25% 38%,
         5% 20%, 32% 30%, 20% 10%, 40% 25%, 35% 5%, 45% 20%
     );
-    animation: burst-rays 0.5s ease-out;
+    animation: burst-rays 1s ease-out;
 }
 
 .burst-cloud.yeah::after {
@@ -1382,7 +1645,7 @@ html, body {
         0 4px 0 #000,
         4px 0 0 #000,
         0 6px 10px rgba(0, 0, 0, 0.5);
-    animation: burst-text 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    animation: burst-text 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 .burst-text.yeah {
@@ -1473,7 +1736,7 @@ html, body {
         rgba(255, 255, 255, 0.9),
         rgba(255, 255, 255, 0.5),
         transparent);
-    animation: lightning-flash 0.3s ease-out;
+    animation: lightning-flash 0.6s ease-out;
 }
 
 .burst-lightning::before {

@@ -3,6 +3,8 @@
 const STORAGE_KEY = 'dailyBattle';
 const INSTALL_DISMISSED_KEY = 'installDismissed';
 const NOTIFICATION_SETTINGS_KEY = 'notificationSettings';
+const THEME_KEY = 'dailyBattleTheme';
+const SORT_KEY = 'dailyBattleSort';
 
 // Battle Presets - 50 battles organized by category
 const BATTLE_PRESETS = [
@@ -101,7 +103,10 @@ let state = {
 
 let cooldownInterval = null;
 let calendarMonth = new Date();
+let calendarOverviewMonth = new Date();
 let deferredPrompt = null;
+let currentSort = 'recent-desc';
+let currentTheme = 'purple';
 
 // Get current battle
 function getCurrentBattle() {
@@ -305,12 +310,33 @@ function showBattle(battleId) {
 }
 
 // Overview Screen
+function getSortedBattles() {
+    const battles = [...state.battles];
+
+    switch (currentSort) {
+        case 'recent-desc':
+            // Newest first (by id which is timestamp-based)
+            return battles.sort((a, b) => b.id.localeCompare(a.id));
+        case 'recent-asc':
+            // Oldest first
+            return battles.sort((a, b) => a.id.localeCompare(b.id));
+        case 'score-desc':
+            // Best cumulative score first
+            return battles.sort((a, b) => calculateCumulativeScore(b) - calculateCumulativeScore(a));
+        case 'score-asc':
+            // Worst cumulative score first
+            return battles.sort((a, b) => calculateCumulativeScore(a) - calculateCumulativeScore(b));
+        default:
+            return battles;
+    }
+}
+
 function renderBattlesList() {
     const list = document.getElementById('battles-list');
 
     if (state.battles.length === 0) {
         list.innerHTML = `
-            <div class="empty-state">
+            <div class="empty-state" style="grid-column: span 2;">
                 <div class="empty-state-icon">⚔️</div>
                 <div class="empty-state-title">Geen battles nog</div>
                 <div class="empty-state-text">Start je eerste battle tegen een slechte gewoonte!</div>
@@ -319,7 +345,9 @@ function renderBattlesList() {
         return;
     }
 
-    list.innerHTML = state.battles.map(battle => {
+    const sortedBattles = getSortedBattles();
+
+    list.innerHTML = sortedBattles.map(battle => {
         const todayData = getDayData(battle, getTodayKey());
         const ratio = calculateRatio(todayData.good, todayData.bad);
         const hasData = todayData.good + todayData.bad > 0;
@@ -328,9 +356,10 @@ function renderBattlesList() {
 
         return `
             <div class="battle-card" data-id="${battle.id}">
+                <div class="battle-card-color" style="background-color: ${colorToString(color)}"></div>
                 <div class="battle-card-header">
                     <span class="battle-card-title">${escapeHtml(battle.habit.name)}</span>
-                    ${streak > 0 ? `<span class="battle-card-streak">${streak} 🔥</span>` : ''}
+                    ${streak > 0 ? `<span class="battle-card-streak">${streak}🔥</span>` : ''}
                 </div>
                 <div class="battle-card-question">${escapeHtml(battle.habit.question)}</div>
                 <div class="battle-card-stats">
@@ -339,7 +368,6 @@ function renderBattlesList() {
                         <span class="vs">vs</span>
                         <span class="bad">${todayData.bad}</span>
                     </div>
-                    <div class="battle-card-color" style="background-color: ${colorToString(color)}"></div>
                 </div>
             </div>
         `;
@@ -656,7 +684,7 @@ function showBurstAnimation(isGood) {
     // Hide after animation completes
     setTimeout(() => {
         burst.classList.add('hidden');
-    }, 600);
+    }, 1200);
 }
 
 function handleUndo() {
@@ -1127,9 +1155,46 @@ function showNotification(battle) {
     };
 }
 
+function calculateCumulativeScore(battle) {
+    if (!battle || !battle.history) return 0;
+    let total = 0;
+    for (const dateKey in battle.history) {
+        const day = battle.history[dateKey];
+        total += (day.good || 0) - (day.bad || 0);
+    }
+    return total;
+}
+
+function getSmartReminderMultiplier() {
+    // Calculate average cumulative score across all battles
+    if (state.battles.length === 0) return 1;
+
+    let totalScore = 0;
+    for (const battle of state.battles) {
+        totalScore += calculateCumulativeScore(battle);
+    }
+    const avgScore = totalScore / state.battles.length;
+
+    // If score is very negative, increase frequency (lower multiplier)
+    // If score is positive, decrease frequency (higher multiplier)
+    // Range: 0.25x (4x faster) to 2x (half as frequent)
+    if (avgScore <= -20) return 0.25;
+    if (avgScore <= -10) return 0.5;
+    if (avgScore <= -5) return 0.75;
+    if (avgScore < 0) return 0.9;
+    if (avgScore >= 20) return 2;
+    if (avgScore >= 10) return 1.5;
+    if (avgScore >= 5) return 1.25;
+    return 1;
+}
+
 function getNextNotificationDelay() {
     const option = INTERVAL_OPTIONS[notificationSettings.intervalIndex];
-    const baseMs = option.hours * 60 * 60 * 1000;
+    let baseMs = option.hours * 60 * 60 * 1000;
+
+    // Apply smart multiplier based on cumulative scores
+    const multiplier = getSmartReminderMultiplier();
+    baseMs = baseMs * multiplier;
 
     if (notificationSettings.randomTiming) {
         // Random time between 0 and the full interval
@@ -1231,6 +1296,208 @@ function initNotifications() {
     startNotificationScheduler();
 }
 
+// Sort functionality
+function initSort() {
+    const sortBtn = document.getElementById('sort-btn');
+    const sortMenu = document.getElementById('sort-menu');
+    const sortOptions = document.querySelectorAll('.sort-option');
+
+    // Load saved sort preference
+    const savedSort = localStorage.getItem(SORT_KEY);
+    if (savedSort) {
+        currentSort = savedSort;
+        sortOptions.forEach(opt => {
+            opt.classList.toggle('active', opt.dataset.sort === currentSort);
+        });
+    }
+
+    sortBtn.addEventListener('click', () => {
+        sortMenu.classList.toggle('hidden');
+    });
+
+    sortOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            currentSort = option.dataset.sort;
+            localStorage.setItem(SORT_KEY, currentSort);
+
+            sortOptions.forEach(opt => opt.classList.remove('active'));
+            option.classList.add('active');
+
+            renderBattlesList();
+            sortMenu.classList.add('hidden');
+        });
+    });
+
+    // Close sort menu when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!sortBtn.contains(e.target) && !sortMenu.contains(e.target)) {
+            sortMenu.classList.add('hidden');
+        }
+    });
+}
+
+// Theme functionality
+function initTheme() {
+    const themeBtn = document.getElementById('theme-btn');
+    const themeModal = document.getElementById('theme-modal');
+    const closeTheme = document.getElementById('close-theme');
+    const themeOptions = document.querySelectorAll('.theme-option');
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem(THEME_KEY);
+    if (savedTheme) {
+        currentTheme = savedTheme;
+        applyTheme(currentTheme);
+    }
+
+    themeBtn.addEventListener('click', () => {
+        updateThemeSelection();
+        themeModal.classList.remove('hidden');
+    });
+
+    closeTheme.addEventListener('click', () => {
+        themeModal.classList.add('hidden');
+    });
+
+    themeModal.addEventListener('click', (e) => {
+        if (e.target === themeModal) {
+            themeModal.classList.add('hidden');
+        }
+    });
+
+    themeOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            currentTheme = option.dataset.theme;
+            localStorage.setItem(THEME_KEY, currentTheme);
+            applyTheme(currentTheme);
+            updateThemeSelection();
+        });
+    });
+}
+
+function applyTheme(theme) {
+    if (theme === 'purple') {
+        document.documentElement.removeAttribute('data-theme');
+    } else {
+        document.documentElement.setAttribute('data-theme', theme);
+    }
+}
+
+function updateThemeSelection() {
+    document.querySelectorAll('.theme-option').forEach(opt => {
+        opt.classList.toggle('active', opt.dataset.theme === currentTheme);
+    });
+}
+
+// Calendar Overview functionality
+function initCalendarOverview() {
+    const calendarBtn = document.getElementById('calendar-overview-btn');
+    const calendarModal = document.getElementById('calendar-overview-modal');
+    const closeCalendar = document.getElementById('close-calendar-overview');
+    const prevBtn = document.getElementById('prev-overview-month');
+    const nextBtn = document.getElementById('next-overview-month');
+
+    calendarBtn.addEventListener('click', () => {
+        calendarOverviewMonth = new Date();
+        updateCalendarOverview();
+        calendarModal.classList.remove('hidden');
+    });
+
+    closeCalendar.addEventListener('click', () => {
+        calendarModal.classList.add('hidden');
+    });
+
+    calendarModal.addEventListener('click', (e) => {
+        if (e.target === calendarModal) {
+            calendarModal.classList.add('hidden');
+        }
+    });
+
+    prevBtn.addEventListener('click', () => {
+        calendarOverviewMonth.setMonth(calendarOverviewMonth.getMonth() - 1);
+        updateCalendarOverview();
+    });
+
+    nextBtn.addEventListener('click', () => {
+        calendarOverviewMonth.setMonth(calendarOverviewMonth.getMonth() + 1);
+        updateCalendarOverview();
+    });
+}
+
+function getCumulativeDayData(dateKey) {
+    // Get combined data for all battles on a specific day
+    let totalGood = 0;
+    let totalBad = 0;
+
+    for (const battle of state.battles) {
+        const dayData = getDayData(battle, dateKey);
+        totalGood += dayData.good;
+        totalBad += dayData.bad;
+    }
+
+    return { good: totalGood, bad: totalBad };
+}
+
+function updateCalendarOverview() {
+    const monthNames = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
+                       'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'];
+
+    document.getElementById('calendar-overview-title').textContent =
+        `${monthNames[calendarOverviewMonth.getMonth()]} ${calendarOverviewMonth.getFullYear()}`;
+
+    const grid = document.getElementById('calendar-overview-grid');
+    grid.innerHTML = '';
+
+    const year = calendarOverviewMonth.getFullYear();
+    const month = calendarOverviewMonth.getMonth();
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDayOfWeek = firstDay.getDay();
+
+    const today = new Date();
+    const todayKey = getTodayKey();
+
+    // Empty cells for days before first of month
+    for (let i = 0; i < startDayOfWeek; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'calendar-overview-day empty';
+        grid.appendChild(emptyDay);
+    }
+
+    // Days of the month
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+        const date = new Date(year, month, day);
+        const dateKey = getDateKey(date);
+        const dayData = getCumulativeDayData(dateKey);
+        const hasData = dayData.good + dayData.bad > 0;
+
+        const ratio = calculateRatio(dayData.good, dayData.bad);
+        const balance = calculateBalance(dayData.good, dayData.bad);
+        const color = ratioToColor(ratio, hasData);
+
+        const isToday = dateKey === todayKey;
+        const isFuture = date > today;
+
+        const dayEl = document.createElement('div');
+        dayEl.className = 'calendar-overview-day' + (isToday ? ' today' : '');
+
+        if (isFuture) {
+            dayEl.classList.add('empty');
+        } else if (hasData) {
+            dayEl.style.backgroundColor = colorToString(color);
+        } else {
+            dayEl.style.backgroundColor = 'rgba(128, 128, 128, 0.3)';
+        }
+
+        dayEl.innerHTML = `
+            <span class="day-number">${day}</span>
+            ${hasData ? `<span class="day-score">${balance > 0 ? '+' + balance : balance}</span>` : ''}
+        `;
+        grid.appendChild(dayEl);
+    }
+}
+
 // Service Worker Registration
 function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
@@ -1244,6 +1511,13 @@ function registerServiceWorker() {
 function init() {
     registerServiceWorker();
 
+    // Load theme first for immediate visual
+    const savedTheme = localStorage.getItem(THEME_KEY);
+    if (savedTheme) {
+        currentTheme = savedTheme;
+        applyTheme(currentTheme);
+    }
+
     const hasData = loadState();
 
     if (hasData && state.battles.length > 0) {
@@ -1256,6 +1530,9 @@ function init() {
     initEventListeners();
     initPresets();
     initNotifications();
+    initSort();
+    initTheme();
+    initCalendarOverview();
 }
 
 // Start

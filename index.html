@@ -22,12 +22,23 @@
                     <span>Daily Battle</span>
                 </div>
                 <div class="header-right">
+                    <button id="sort-btn" class="icon-btn" title="Sorteer">🔀</button>
+                    <button id="calendar-overview-btn" class="icon-btn" title="Kalender">📅</button>
+                    <button id="theme-btn" class="icon-btn" title="Thema">🎨</button>
                     <button id="overview-settings-btn" class="icon-btn">⚙️</button>
                 </div>
             </header>
 
+            <!-- Sort Menu -->
+            <div id="sort-menu" class="sort-menu hidden">
+                <button class="sort-option active" data-sort="recent-desc">Nieuwste eerst</button>
+                <button class="sort-option" data-sort="recent-asc">Oudste eerst</button>
+                <button class="sort-option" data-sort="score-desc">Beste score eerst</button>
+                <button class="sort-option" data-sort="score-asc">Slechtste score eerst</button>
+            </div>
+
             <main class="overview-content">
-                <div id="battles-list" class="battles-list">
+                <div id="battles-list" class="battles-list battles-grid">
                     <!-- Filled by JS -->
                 </div>
 
@@ -36,6 +47,72 @@
                     <span>Nieuwe Battle</span>
                 </button>
             </main>
+        </div>
+
+        <!-- Calendar Overview Modal -->
+        <div id="calendar-overview-modal" class="modal hidden">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2>📅 Cumulatief Overzicht</h2>
+                    <button id="close-calendar-overview" class="close-btn">✕</button>
+                </div>
+                <div class="calendar-overview-nav">
+                    <button id="prev-overview-month" class="nav-btn">◀</button>
+                    <span id="calendar-overview-title">December 2024</span>
+                    <button id="next-overview-month" class="nav-btn">▶</button>
+                </div>
+                <div class="calendar-weekdays">
+                    <span>Zo</span><span>Ma</span><span>Di</span><span>Wo</span><span>Do</span><span>Vr</span><span>Za</span>
+                </div>
+                <div id="calendar-overview-grid" class="calendar-overview-grid">
+                    <!-- Filled by JS -->
+                </div>
+                <div class="calendar-legend">
+                    <span class="legend-item"><span class="legend-color bad"></span> Negatief</span>
+                    <span class="legend-item"><span class="legend-color neutral"></span> Neutraal</span>
+                    <span class="legend-item"><span class="legend-color good"></span> Positief</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Theme Picker Modal -->
+        <div id="theme-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>🎨 Kies een Thema</h2>
+                    <button id="close-theme" class="close-btn">✕</button>
+                </div>
+                <div class="theme-list">
+                    <button class="theme-option" data-theme="purple">
+                        <span class="theme-preview purple"></span>
+                        <span>Paars (Standaard)</span>
+                    </button>
+                    <button class="theme-option" data-theme="blue">
+                        <span class="theme-preview blue"></span>
+                        <span>Oceaan Blauw</span>
+                    </button>
+                    <button class="theme-option" data-theme="green">
+                        <span class="theme-preview green"></span>
+                        <span>Bos Groen</span>
+                    </button>
+                    <button class="theme-option" data-theme="red">
+                        <span class="theme-preview red"></span>
+                        <span>Vuur Rood</span>
+                    </button>
+                    <button class="theme-option" data-theme="orange">
+                        <span class="theme-preview orange"></span>
+                        <span>Zonsondergang</span>
+                    </button>
+                    <button class="theme-option" data-theme="pink">
+                        <span class="theme-preview pink"></span>
+                        <span>Roze</span>
+                    </button>
+                    <button class="theme-option" data-theme="dark">
+                        <span class="theme-preview dark"></span>
+                        <span>Donker</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Setup Screen -->
