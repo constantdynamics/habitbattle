@@ -49,6 +49,11 @@
 
                 <div class="setup-form">
                     <div class="form-group">
+                        <label>Kies een preset of maak je eigen</label>
+                        <button id="show-presets-btn" class="secondary-btn">📋 Kies uit presets</button>
+                    </div>
+
+                    <div class="form-group">
                         <label for="habit-name">Gewoonte Naam</label>
                         <input type="text" id="habit-name" placeholder="bijv. Goede houding">
                     </div>
@@ -78,8 +83,8 @@
         <div id="main-app" class="screen hidden">
             <!-- Header -->
             <header class="app-header">
-                <div class="header-left">
-                    <button id="back-btn" class="icon-btn back-btn">⚔️</button>
+                <div class="header-left header-home-link" id="header-home-link">
+                    <span class="app-icon-small">⚔️</span>
                     <span id="header-habit-name">Goede houding</span>
                 </div>
                 <div class="header-right">
@@ -116,12 +121,10 @@
 
                     <div class="action-buttons">
                         <button id="yes-btn" class="action-btn yes-btn">
-                            <span class="btn-icon">✓</span>
-                            <span class="btn-text">Ja!</span>
+                            <span class="btn-icon-bold">✓</span>
                         </button>
                         <button id="no-btn" class="action-btn no-btn">
-                            <span class="btn-icon">✗</span>
-                            <span class="btn-text">Nee</span>
+                            <span class="btn-icon-bold">✕</span>
                         </button>
                     </div>
 
@@ -231,6 +234,28 @@
                 </div>
 
                 <div class="settings-section">
+                    <h3>Herinneringen</h3>
+
+                    <div class="form-group">
+                        <label class="toggle-label">
+                            <span>Notificaties inschakelen</span>
+                            <input type="checkbox" id="notifications-enabled">
+                            <span class="toggle-switch"></span>
+                        </label>
+                    </div>
+
+                    <div class="form-group" id="notification-interval-group">
+                        <label>Herinner me elke</label>
+                        <div class="cooldown-options">
+                            <button class="interval-btn" data-hours="1">1 uur</button>
+                            <button class="interval-btn" data-hours="2">2 uur</button>
+                            <button class="interval-btn" data-hours="3">3 uur</button>
+                            <button class="interval-btn" data-hours="4">4 uur</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
                     <h3>Data Beheer</h3>
 
                     <button id="export-data" class="secondary-btn">
@@ -249,6 +274,22 @@
                     <button id="clear-data" class="danger-btn" style="margin-top: 8px;">
                         <span>🗑️</span> Wis Alle Data
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Presets Modal -->
+        <div id="presets-modal" class="modal hidden">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2>Kies een Battle</h2>
+                    <button id="close-presets" class="close-btn">✕</button>
+                </div>
+                <div class="presets-search">
+                    <input type="text" id="presets-search-input" placeholder="Zoek een battle...">
+                </div>
+                <div id="presets-list" class="presets-list">
+                    <!-- Filled by JS -->
                 </div>
             </div>
         </div>

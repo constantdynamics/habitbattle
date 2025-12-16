@@ -2,6 +2,80 @@
 
 const STORAGE_KEY = 'dailyBattle';
 const INSTALL_DISMISSED_KEY = 'installDismissed';
+const NOTIFICATION_SETTINGS_KEY = 'notificationSettings';
+
+// Battle Presets - 50 battles organized by category
+const BATTLE_PRESETS = [
+    // Lichaamshouding & Fysiek (10)
+    { category: 'Lichaamshouding', name: 'Goede houding', question: 'Zit of sta je rechtop?' },
+    { category: 'Lichaamshouding', name: 'Schouders ontspannen', question: 'Zijn je schouders ontspannen?' },
+    { category: 'Lichaamshouding', name: 'Kaak ontspannen', question: 'Is je kaak ontspannen?' },
+    { category: 'Lichaamshouding', name: 'Niet onderuit zakken', question: 'Zit je rechtop zonder te hangen?' },
+    { category: 'Lichaamshouding', name: 'Rechte rug', question: 'Is je rug recht?' },
+    { category: 'Lichaamshouding', name: 'Nek recht', question: 'Is je nek in neutrale positie?' },
+    { category: 'Lichaamshouding', name: 'Voeten plat', question: 'Staan je voeten plat op de grond?' },
+    { category: 'Lichaamshouding', name: 'Geen gekruiste benen', question: 'Zitten je benen niet gekruist?' },
+    { category: 'Lichaamshouding', name: 'Core aangespannen', question: 'Is je core licht aangespannen?' },
+    { category: 'Lichaamshouding', name: 'Hoofd omhoog', question: 'Kijk je recht vooruit?' },
+
+    // Ademhaling & Ontspanning (8)
+    { category: 'Ademhaling', name: 'Diep ademen', question: 'Adem je diep en rustig?' },
+    { category: 'Ademhaling', name: 'Buikademhaling', question: 'Adem je vanuit je buik?' },
+    { category: 'Ademhaling', name: 'Langzaam uitademen', question: 'Adem je langzaam uit?' },
+    { category: 'Ademhaling', name: 'Bewust ademen', question: 'Ben je bewust van je ademhaling?' },
+    { category: 'Ademhaling', name: 'Ontspannen gezicht', question: 'Is je gezicht ontspannen?' },
+    { category: 'Ademhaling', name: 'Geen adem inhouden', question: 'Houd je je adem niet in?' },
+    { category: 'Ademhaling', name: 'Rustige hartslag', question: 'Voel je je rustig?' },
+    { category: 'Ademhaling', name: 'Geen gespannen spieren', question: 'Zijn je spieren ontspannen?' },
+
+    // Focus & Productiviteit (10)
+    { category: 'Focus', name: 'Bij de taak blijven', question: 'Ben je gefocust op je huidige taak?' },
+    { category: 'Focus', name: 'Geen afleiding', question: 'Laat je je niet afleiden?' },
+    { category: 'Focus', name: 'Single-tasking', question: 'Doe je maar één ding tegelijk?' },
+    { category: 'Focus', name: 'Telefoon weg', question: 'Is je telefoon uit zicht?' },
+    { category: 'Focus', name: 'Notificaties uit', question: 'Zijn afleidende notificaties uit?' },
+    { category: 'Focus', name: 'Geen social media', question: 'Zit je niet op social media?' },
+    { category: 'Focus', name: 'Belangrijkste eerst', question: 'Werk je aan iets belangrijks?' },
+    { category: 'Focus', name: 'Geen uitstelgedrag', question: 'Stel je niets uit?' },
+    { category: 'Focus', name: 'Timer aan', question: 'Werk je in gefocuste blokken?' },
+    { category: 'Focus', name: 'Duidelijk doel', question: 'Weet je wat je wilt bereiken?' },
+
+    // Mentaal & Mindset (10)
+    { category: 'Mentaal', name: 'Positief denken', question: 'Zijn je gedachten positief?' },
+    { category: 'Mentaal', name: 'In het nu', question: 'Ben je in het moment?' },
+    { category: 'Mentaal', name: 'Geen piekeren', question: 'Pieker je niet?' },
+    { category: 'Mentaal', name: 'Dankbaarheid', question: 'Ben je je bewust van iets positiefs?' },
+    { category: 'Mentaal', name: 'Geen zelfkritiek', question: 'Ben je aardig voor jezelf?' },
+    { category: 'Mentaal', name: 'Acceptatie', question: 'Accepteer je de huidige situatie?' },
+    { category: 'Mentaal', name: 'Geen vergelijken', question: 'Vergelijk je jezelf niet met anderen?' },
+    { category: 'Mentaal', name: 'Grenzen stellen', question: 'Respecteer je je eigen grenzen?' },
+    { category: 'Mentaal', name: 'Loslaten', question: 'Laat je negatieve gedachten los?' },
+    { category: 'Mentaal', name: 'Zelfvertrouwen', question: 'Geloof je in jezelf?' },
+
+    // Gezondheid & Leefstijl (7)
+    { category: 'Gezondheid', name: 'Water drinken', question: 'Heb je recent water gedronken?' },
+    { category: 'Gezondheid', name: 'Gezond eten', question: 'Maak je gezonde keuzes?' },
+    { category: 'Gezondheid', name: 'Geen snacken', question: 'Eet je niet ongezond tussendoor?' },
+    { category: 'Gezondheid', name: 'Bewegen', question: 'Heb je recent bewogen?' },
+    { category: 'Gezondheid', name: 'Pauze nemen', question: 'Neem je genoeg pauzes?' },
+    { category: 'Gezondheid', name: 'Ogen rusten', question: 'Gun je je ogen rust van schermen?' },
+    { category: 'Gezondheid', name: 'Staan/lopen', question: 'Sta of loop je regelmatig?' },
+
+    // Communicatie & Sociaal (5)
+    { category: 'Sociaal', name: 'Actief luisteren', question: 'Luister je echt naar anderen?' },
+    { category: 'Sociaal', name: 'Niet onderbreken', question: 'Laat je anderen uitpraten?' },
+    { category: 'Sociaal', name: 'Vriendelijk zijn', question: 'Ben je vriendelijk?' },
+    { category: 'Sociaal', name: 'Oogcontact', question: 'Maak je oogcontact?' },
+    { category: 'Sociaal', name: 'Geduld', question: 'Ben je geduldig?' }
+];
+
+// Notification settings
+let notificationSettings = {
+    enabled: false,
+    intervalHours: 2
+};
+
+let notificationInterval = null;
 
 // State
 let state = {
@@ -840,8 +914,8 @@ function initNavigation() {
     document.getElementById('prev-month').addEventListener('click', () => handleCalendarNav(-1));
     document.getElementById('next-month').addEventListener('click', () => handleCalendarNav(1));
 
-    // Back button
-    document.getElementById('back-btn').addEventListener('click', () => {
+    // Header home link (logo + text)
+    document.getElementById('header-home-link').addEventListener('click', () => {
         if (cooldownInterval) {
             clearInterval(cooldownInterval);
             cooldownInterval = null;
@@ -864,6 +938,194 @@ function initEventListeners() {
     initNavigation();
     initSettings();
     initInstallPrompt();
+}
+
+// Presets
+function initPresets() {
+    const showPresetsBtn = document.getElementById('show-presets-btn');
+    const presetsModal = document.getElementById('presets-modal');
+    const closePresetsBtn = document.getElementById('close-presets');
+    const searchInput = document.getElementById('presets-search-input');
+    const presetsList = document.getElementById('presets-list');
+
+    function renderPresets(filter = '') {
+        const filtered = filter
+            ? BATTLE_PRESETS.filter(p =>
+                p.name.toLowerCase().includes(filter.toLowerCase()) ||
+                p.question.toLowerCase().includes(filter.toLowerCase()) ||
+                p.category.toLowerCase().includes(filter.toLowerCase())
+            )
+            : BATTLE_PRESETS;
+
+        // Group by category
+        const grouped = {};
+        filtered.forEach(preset => {
+            if (!grouped[preset.category]) {
+                grouped[preset.category] = [];
+            }
+            grouped[preset.category].push(preset);
+        });
+
+        let html = '';
+        for (const [category, presets] of Object.entries(grouped)) {
+            html += `<div class="preset-category">${category}</div>`;
+            presets.forEach(preset => {
+                html += `
+                    <div class="preset-item" data-name="${escapeHtml(preset.name)}" data-question="${escapeHtml(preset.question)}">
+                        <div class="preset-item-name">${escapeHtml(preset.name)}</div>
+                        <div class="preset-item-question">${escapeHtml(preset.question)}</div>
+                    </div>
+                `;
+            });
+        }
+
+        presetsList.innerHTML = html || '<p style="text-align:center;color:var(--text-muted)">Geen resultaten</p>';
+
+        // Add click listeners
+        presetsList.querySelectorAll('.preset-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.getElementById('habit-name').value = item.dataset.name;
+                document.getElementById('habit-question').value = item.dataset.question;
+                document.getElementById('start-battle-btn').disabled = false;
+                presetsModal.classList.add('hidden');
+            });
+        });
+    }
+
+    showPresetsBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        renderPresets();
+        presetsModal.classList.remove('hidden');
+    });
+
+    closePresetsBtn.addEventListener('click', () => {
+        presetsModal.classList.add('hidden');
+    });
+
+    presetsModal.addEventListener('click', (e) => {
+        if (e.target === presetsModal) {
+            presetsModal.classList.add('hidden');
+        }
+    });
+
+    searchInput.addEventListener('input', () => {
+        renderPresets(searchInput.value);
+    });
+}
+
+// Notifications
+function loadNotificationSettings() {
+    try {
+        const saved = localStorage.getItem(NOTIFICATION_SETTINGS_KEY);
+        if (saved) {
+            notificationSettings = JSON.parse(saved);
+        }
+    } catch (e) {
+        console.error('Failed to load notification settings:', e);
+    }
+}
+
+function saveNotificationSettings() {
+    try {
+        localStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(notificationSettings));
+    } catch (e) {
+        console.error('Failed to save notification settings:', e);
+    }
+}
+
+async function requestNotificationPermission() {
+    if (!('Notification' in window)) {
+        alert('Deze browser ondersteunt geen notificaties');
+        return false;
+    }
+
+    if (Notification.permission === 'granted') {
+        return true;
+    }
+
+    if (Notification.permission !== 'denied') {
+        const permission = await Notification.requestPermission();
+        return permission === 'granted';
+    }
+
+    return false;
+}
+
+function showNotification(battle) {
+    if (Notification.permission !== 'granted') return;
+
+    const notification = new Notification('Daily Battle', {
+        body: battle ? `Hoe gaat "${battle.habit.name}"? ${battle.habit.question}` : 'Tijd voor een check-in!',
+        icon: 'icons/icon-192.png',
+        badge: 'icons/icon-72.png',
+        tag: 'daily-battle-reminder',
+        requireInteraction: true
+    });
+
+    notification.onclick = () => {
+        window.focus();
+        if (battle) {
+            showBattle(battle.id);
+        }
+        notification.close();
+    };
+}
+
+function startNotificationScheduler() {
+    if (notificationInterval) {
+        clearInterval(notificationInterval);
+    }
+
+    if (!notificationSettings.enabled || state.battles.length === 0) return;
+
+    const intervalMs = notificationSettings.intervalHours * 60 * 60 * 1000;
+
+    notificationInterval = setInterval(() => {
+        // Pick a random battle or the first one
+        const battle = state.battles[Math.floor(Math.random() * state.battles.length)];
+        showNotification(battle);
+    }, intervalMs);
+}
+
+function initNotifications() {
+    loadNotificationSettings();
+
+    const enabledCheckbox = document.getElementById('notifications-enabled');
+    const intervalBtns = document.querySelectorAll('.interval-btn');
+
+    // Set initial state
+    enabledCheckbox.checked = notificationSettings.enabled;
+    intervalBtns.forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.hours) === notificationSettings.intervalHours);
+    });
+
+    enabledCheckbox.addEventListener('change', async () => {
+        if (enabledCheckbox.checked) {
+            const granted = await requestNotificationPermission();
+            if (!granted) {
+                enabledCheckbox.checked = false;
+                alert('Notificaties zijn geblokkeerd. Schakel ze in via je browserinstellingen.');
+                return;
+            }
+        }
+
+        notificationSettings.enabled = enabledCheckbox.checked;
+        saveNotificationSettings();
+        startNotificationScheduler();
+    });
+
+    intervalBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            intervalBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            notificationSettings.intervalHours = parseInt(btn.dataset.hours);
+            saveNotificationSettings();
+            startNotificationScheduler();
+        });
+    });
+
+    // Start scheduler if enabled
+    startNotificationScheduler();
 }
 
 // Service Worker Registration
@@ -889,6 +1151,8 @@ function init() {
 
     initSetup();
     initEventListeners();
+    initPresets();
+    initNotifications();
 }
 
 // Start

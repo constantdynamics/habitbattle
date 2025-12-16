@@ -369,6 +369,13 @@ html, body {
     font-weight: bold;
 }
 
+.btn-icon-bold {
+    font-size: 72px;
+    font-weight: 900;
+    color: var(--text-primary);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
 .btn-text {
     font-size: 20px;
     font-weight: bold;
@@ -1036,4 +1043,157 @@ html, body {
 
 .empty-state-text {
     font-size: 14px;
+}
+
+/* Header Home Link */
+.header-home-link {
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.header-home-link:hover {
+    opacity: 0.8;
+}
+
+.header-home-link:active {
+    opacity: 0.6;
+}
+
+/* Toggle Switch */
+.toggle-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.toggle-label input {
+    display: none;
+}
+
+.toggle-switch {
+    width: 50px;
+    height: 28px;
+    background: var(--purple-border);
+    border-radius: 14px;
+    position: relative;
+    transition: background 0.2s;
+}
+
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    background: white;
+    border-radius: 50%;
+    top: 3px;
+    left: 3px;
+    transition: transform 0.2s;
+}
+
+.toggle-label input:checked + .toggle-switch {
+    background: var(--purple-accent);
+}
+
+.toggle-label input:checked + .toggle-switch::after {
+    transform: translateX(22px);
+}
+
+/* Interval Buttons */
+.interval-btn {
+    flex: 1;
+    padding: 12px 8px;
+    border-radius: 12px;
+    border: 2px solid var(--purple-border);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.interval-btn.active {
+    background: var(--purple-accent);
+    border-color: var(--purple-accent);
+    color: var(--text-primary);
+}
+
+/* Presets Modal */
+.modal-large {
+    max-width: 400px;
+    max-height: 80vh;
+}
+
+.presets-search {
+    padding: 0 20px 16px;
+}
+
+.presets-search input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 2px solid var(--purple-border);
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+}
+
+.presets-search input:focus {
+    border-color: var(--purple-accent);
+}
+
+.presets-search input::placeholder {
+    color: var(--text-muted);
+}
+
+.presets-list {
+    padding: 0 20px 20px;
+    max-height: 50vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.preset-item {
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--purple-border);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.preset-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--purple-accent);
+}
+
+.preset-item-name {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.preset-item-question {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.preset-category {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--purple-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 16px;
+    margin-bottom: 8px;
+    padding-left: 4px;
+}
+
+.preset-category:first-child {
+    margin-top: 0;
 }
