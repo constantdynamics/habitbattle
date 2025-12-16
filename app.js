@@ -628,8 +628,35 @@ function recordEntry(isGood) {
     // Set cooldown
     battle.cooldownEnd = Date.now() + (battle.habit.cooldownMinutes * 60 * 1000);
 
+    // Show burst animation
+    showBurstAnimation(isGood);
+
     saveState();
     updateMainUI();
+}
+
+// Battle Burst Animation
+function showBurstAnimation(isGood) {
+    const burst = document.getElementById('battle-burst');
+    const cloud = burst.querySelector('.burst-cloud');
+    const text = burst.querySelector('.burst-text');
+
+    // Set the type
+    const type = isGood ? 'yeah' : 'damn';
+    cloud.className = 'burst-cloud ' + type;
+    text.className = 'burst-text ' + type;
+    text.textContent = isGood ? 'YEAH!' : 'DAMN!';
+
+    // Show the burst
+    burst.classList.remove('hidden');
+
+    // Force reflow to restart animations
+    void burst.offsetWidth;
+
+    // Hide after animation completes
+    setTimeout(() => {
+        burst.classList.add('hidden');
+    }, 600);
 }
 
 function handleUndo() {
