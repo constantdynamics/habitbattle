@@ -888,3 +888,152 @@ html, body {
     background: var(--purple-border);
     border-radius: 2px;
 }
+
+/* Overview Screen */
+.overview-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.battles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.battle-card {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--purple-border);
+    border-radius: 16px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.battle-card:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.battle-card:active {
+    transform: scale(0.98);
+}
+
+.battle-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.battle-card-title {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.battle-card-streak {
+    font-size: 14px;
+    color: var(--orange-primary);
+}
+
+.battle-card-question {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.battle-card-stats {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.battle-card-score {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.battle-card-score .good {
+    color: var(--good-color);
+}
+
+.battle-card-score .bad {
+    color: var(--bad-color);
+}
+
+.battle-card-score .vs {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.battle-card-color {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    margin-left: auto;
+}
+
+.add-battle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px;
+    border-radius: 16px;
+    border: 2px dashed var(--purple-border);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: auto;
+}
+
+.add-battle-btn:hover {
+    border-color: var(--purple-accent);
+    color: var(--text-primary);
+    background: rgba(124, 58, 237, 0.1);
+}
+
+.add-icon {
+    font-size: 24px;
+    font-weight: 300;
+}
+
+.back-btn {
+    font-size: 20px;
+    color: var(--text-primary);
+}
+
+.cancel-btn {
+    margin-top: 8px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+}
+
+.empty-state-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+}
+
+.empty-state-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.empty-state-text {
+    font-size: 14px;
+}

@@ -14,8 +14,32 @@
 </head>
 <body>
     <div id="app">
+        <!-- Battles Overview Screen -->
+        <div id="overview-screen" class="screen">
+            <header class="app-header">
+                <div class="header-left">
+                    <span class="app-icon-small">⚔️</span>
+                    <span>Daily Battle</span>
+                </div>
+                <div class="header-right">
+                    <button id="overview-settings-btn" class="icon-btn">⚙️</button>
+                </div>
+            </header>
+
+            <main class="overview-content">
+                <div id="battles-list" class="battles-list">
+                    <!-- Filled by JS -->
+                </div>
+
+                <button id="add-battle-btn" class="add-battle-btn">
+                    <span class="add-icon">+</span>
+                    <span>Nieuwe Battle</span>
+                </button>
+            </main>
+        </div>
+
         <!-- Setup Screen -->
-        <div id="setup-screen" class="screen">
+        <div id="setup-screen" class="screen hidden">
             <div class="setup-container">
                 <div class="setup-header">
                     <span class="app-icon">⚔️</span>
@@ -45,6 +69,7 @@
                     </div>
 
                     <button id="start-battle-btn" class="primary-btn" disabled>Start je Battle</button>
+                    <button id="cancel-setup-btn" class="secondary-btn cancel-btn hidden">Annuleren</button>
                 </div>
             </div>
         </div>
@@ -54,7 +79,7 @@
             <!-- Header -->
             <header class="app-header">
                 <div class="header-left">
-                    <span class="app-icon-small">⚔️</span>
+                    <button id="back-btn" class="icon-btn back-btn">←</button>
                     <span id="header-habit-name">Goede houding</span>
                 </div>
                 <div class="header-right">
@@ -217,7 +242,11 @@
                         <input type="file" id="import-data" accept=".json" hidden>
                     </label>
 
-                    <button id="clear-data" class="danger-btn">
+                    <button id="delete-battle" class="danger-btn">
+                        <span>🗑️</span> Verwijder Deze Battle
+                    </button>
+
+                    <button id="clear-data" class="danger-btn" style="margin-top: 8px;">
                         <span>🗑️</span> Wis Alle Data
                     </button>
                 </div>

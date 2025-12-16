@@ -1,20 +1,28 @@
-// Daily Battle App - Main JavaScript
+// Daily Battle App - Multi-Battle Version
 
 const STORAGE_KEY = 'dailyBattle';
 const INSTALL_DISMISSED_KEY = 'installDismissed';
 
 // State
 let state = {
-    habit: null,
-    history: {},
-    cooldownEnd: null
+    battles: [], // Array of battle objects
+    currentBattleId: null
 };
 
 let cooldownInterval = null;
 let calendarMonth = new Date();
 let deferredPrompt = null;
 
+// Get current battle
+function getCurrentBattle() {
+    return state.battles.find(b => b.id === state.currentBattleId);
+}
+
 // Utility Functions
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
 function getDateKey(date = new Date()) {
     return date.toISOString().split('T')[0];
 }
@@ -29,8 +37,9 @@ function getYesterdayKey() {
     return getDateKey(yesterday);
 }
 
-function getDayData(dateKey) {
-    return state.history[dateKey] || { good: 0, bad: 0, entries: [] };
+function getDayData(battle, dateKey) {
+    if (!battle || !battle.history) return { good: 0, bad: 0, entries: [] };
+    return battle.history[dateKey] || { good: 0, bad: 0, entries: [] };
 }
 
 function calculateRatio(good, bad) {
@@ -46,17 +55,14 @@ function calculateBalance(good, bad) {
 function ratioToColor(ratio, hasData = true) {
     if (!hasData) return { r: 128, g: 128, b: 128 };
 
-    // Red (0%) -> Yellow (50%) -> Green (100%)
     let r, g, b;
 
     if (ratio <= 0.5) {
-        // Red to Yellow
         const t = ratio * 2;
         r = 239;
         g = Math.round(68 + (180 - 68) * t);
         b = Math.round(68 + (68 - 68) * t);
     } else {
-        // Yellow to Green
         const t = (ratio - 0.5) * 2;
         r = Math.round(239 - (239 - 34) * t);
         g = Math.round(180 + (197 - 180) * t);
@@ -70,12 +76,13 @@ function colorToString(color) {
     return `rgb(${color.r}, ${color.g}, ${color.b})`;
 }
 
-function calculateStreak() {
+function calculateStreak(battle) {
+    if (!battle) return 0;
+
     let streak = 0;
     const today = new Date();
 
-    // Check today first
-    const todayData = getDayData(getTodayKey());
+    const todayData = getDayData(battle, getTodayKey());
     const todayBalance = calculateBalance(todayData.good, todayData.bad);
     const todayHasData = todayData.good + todayData.bad > 0;
 
@@ -84,15 +91,13 @@ function calculateStreak() {
     } else if (todayHasData && todayBalance <= 0) {
         return 0;
     }
-    // If no data today, we can still count previous days
 
-    // Count backwards from yesterday
     const checkDate = new Date(today);
     checkDate.setDate(checkDate.getDate() - 1);
 
     while (true) {
         const dateKey = getDateKey(checkDate);
-        const dayData = getDayData(dateKey);
+        const dayData = getDayData(battle, dateKey);
         const hasData = dayData.good + dayData.bad > 0;
 
         if (!hasData) break;
@@ -134,10 +139,26 @@ function loadState() {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
             const parsed = JSON.parse(saved);
+
+            // Migration from old single-battle format
+            if (parsed.habit && !parsed.battles) {
+                const oldBattle = {
+                    id: generateId(),
+                    habit: parsed.habit,
+                    history: parsed.history || {},
+                    cooldownEnd: parsed.cooldownEnd || null
+                };
+                state = {
+                    battles: [oldBattle],
+                    currentBattleId: null
+                };
+                saveState();
+                return true;
+            }
+
             state = {
-                habit: parsed.habit || null,
-                history: parsed.history || {},
-                cooldownEnd: parsed.cooldownEnd || null
+                battles: parsed.battles || [],
+                currentBattleId: parsed.currentBattleId || null
             };
             return true;
         }
@@ -149,20 +170,119 @@ function loadState() {
 
 function clearState() {
     localStorage.removeItem(STORAGE_KEY);
-    state = { habit: null, history: {}, cooldownEnd: null };
+    state = { battles: [], currentBattleId: null };
+}
+
+// Screen Navigation
+function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(screen => {
+        screen.classList.add('hidden');
+    });
+    document.getElementById(screenId).classList.remove('hidden');
+}
+
+function showOverview() {
+    state.currentBattleId = null;
+    showScreen('overview-screen');
+    renderBattlesList();
+    checkInstallPrompt();
+}
+
+function showSetup(isNewBattle = false) {
+    showScreen('setup-screen');
+
+    // Reset form
+    document.getElementById('habit-name').value = '';
+    document.getElementById('habit-question').value = '';
+    document.querySelectorAll('#setup-screen .cooldown-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.minutes === '5');
+    });
+    document.getElementById('start-battle-btn').disabled = true;
+
+    // Show cancel button if adding new battle (not first time)
+    const cancelBtn = document.getElementById('cancel-setup-btn');
+    cancelBtn.classList.toggle('hidden', state.battles.length === 0);
+}
+
+function showBattle(battleId) {
+    state.currentBattleId = battleId;
+    showScreen('main-app');
+
+    // Reset to battle tab
+    handleTabSwitch('battle');
+
+    updateMainUI();
+}
+
+// Overview Screen
+function renderBattlesList() {
+    const list = document.getElementById('battles-list');
+
+    if (state.battles.length === 0) {
+        list.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">⚔️</div>
+                <div class="empty-state-title">Geen battles nog</div>
+                <div class="empty-state-text">Start je eerste battle tegen een slechte gewoonte!</div>
+            </div>
+        `;
+        return;
+    }
+
+    list.innerHTML = state.battles.map(battle => {
+        const todayData = getDayData(battle, getTodayKey());
+        const ratio = calculateRatio(todayData.good, todayData.bad);
+        const hasData = todayData.good + todayData.bad > 0;
+        const color = ratioToColor(ratio, hasData);
+        const streak = calculateStreak(battle);
+
+        return `
+            <div class="battle-card" data-id="${battle.id}">
+                <div class="battle-card-header">
+                    <span class="battle-card-title">${escapeHtml(battle.habit.name)}</span>
+                    ${streak > 0 ? `<span class="battle-card-streak">${streak} 🔥</span>` : ''}
+                </div>
+                <div class="battle-card-question">${escapeHtml(battle.habit.question)}</div>
+                <div class="battle-card-stats">
+                    <div class="battle-card-score">
+                        <span class="good">${todayData.good}</span>
+                        <span class="vs">vs</span>
+                        <span class="bad">${todayData.bad}</span>
+                    </div>
+                    <div class="battle-card-color" style="background-color: ${colorToString(color)}"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Add click listeners
+    list.querySelectorAll('.battle-card').forEach(card => {
+        card.addEventListener('click', () => {
+            showBattle(card.dataset.id);
+        });
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // UI Update Functions
 function updateMainUI() {
-    const todayData = getDayData(getTodayKey());
-    const yesterdayData = getDayData(getYesterdayKey());
+    const battle = getCurrentBattle();
+    if (!battle) return;
+
+    const todayData = getDayData(battle, getTodayKey());
+    const yesterdayData = getDayData(battle, getYesterdayKey());
 
     // Header
-    document.getElementById('header-habit-name').textContent = state.habit.name;
-    document.getElementById('header-streak').textContent = `Streak: ${calculateStreak()} 🔥`;
+    document.getElementById('header-habit-name').textContent = battle.habit.name;
+    document.getElementById('header-streak').textContent = `Streak: ${calculateStreak(battle)} 🔥`;
 
     // Question
-    document.getElementById('battle-question').textContent = state.habit.question;
+    document.getElementById('battle-question').textContent = battle.habit.question;
 
     // Scores
     document.getElementById('good-count').textContent = todayData.good;
@@ -220,8 +340,11 @@ function updateMainUI() {
 }
 
 function updateCooldownUI() {
+    const battle = getCurrentBattle();
+    if (!battle) return;
+
     const now = Date.now();
-    const isOnCooldown = state.cooldownEnd && state.cooldownEnd > now;
+    const isOnCooldown = battle.cooldownEnd && battle.cooldownEnd > now;
 
     const yesBtn = document.getElementById('yes-btn');
     const noBtn = document.getElementById('no-btn');
@@ -233,16 +356,23 @@ function updateCooldownUI() {
     cooldownDisplay.classList.toggle('hidden', !isOnCooldown);
 
     if (isOnCooldown) {
-        const remaining = state.cooldownEnd - now;
+        const remaining = battle.cooldownEnd - now;
         cooldownTimer.textContent = formatTime(remaining);
 
         if (!cooldownInterval) {
             cooldownInterval = setInterval(() => {
-                const newRemaining = state.cooldownEnd - Date.now();
+                const currentBattle = getCurrentBattle();
+                if (!currentBattle) {
+                    clearInterval(cooldownInterval);
+                    cooldownInterval = null;
+                    return;
+                }
+
+                const newRemaining = currentBattle.cooldownEnd - Date.now();
                 if (newRemaining <= 0) {
                     clearInterval(cooldownInterval);
                     cooldownInterval = null;
-                    state.cooldownEnd = null;
+                    currentBattle.cooldownEnd = null;
                     saveState();
                     updateCooldownUI();
                 } else {
@@ -259,8 +389,11 @@ function updateCooldownUI() {
 }
 
 function updateStatsUI() {
+    const battle = getCurrentBattle();
+    if (!battle) return;
+
     // Streak
-    document.getElementById('streak-count').textContent = calculateStreak();
+    document.getElementById('streak-count').textContent = calculateStreak(battle);
 
     // Week grid
     updateWeekGrid();
@@ -270,6 +403,9 @@ function updateStatsUI() {
 }
 
 function updateWeekGrid() {
+    const battle = getCurrentBattle();
+    if (!battle) return;
+
     const weekGrid = document.getElementById('week-grid');
     weekGrid.innerHTML = '';
 
@@ -280,7 +416,7 @@ function updateWeekGrid() {
         const date = new Date(today);
         date.setDate(date.getDate() - i);
         const dateKey = getDateKey(date);
-        const dayData = getDayData(dateKey);
+        const dayData = getDayData(battle, dateKey);
         const hasData = dayData.good + dayData.bad > 0;
 
         const ratio = calculateRatio(dayData.good, dayData.bad);
@@ -299,6 +435,9 @@ function updateWeekGrid() {
 }
 
 function updateCalendar() {
+    const battle = getCurrentBattle();
+    if (!battle) return;
+
     const monthNames = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
                        'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'];
 
@@ -318,18 +457,16 @@ function updateCalendar() {
     const today = new Date();
     const todayKey = getTodayKey();
 
-    // Empty cells before first day
     for (let i = 0; i < startDayOfWeek; i++) {
         const emptyDay = document.createElement('div');
         emptyDay.className = 'calendar-day empty';
         calendarGrid.appendChild(emptyDay);
     }
 
-    // Days of month
     for (let day = 1; day <= lastDay.getDate(); day++) {
         const date = new Date(year, month, day);
         const dateKey = getDateKey(date);
-        const dayData = getDayData(dateKey);
+        const dayData = getDayData(battle, dateKey);
         const hasData = dayData.good + dayData.bad > 0;
 
         const ratio = calculateRatio(dayData.good, dayData.bad);
@@ -358,24 +495,31 @@ function updateCalendar() {
 
 // Event Handlers
 function handleYesClick() {
-    if (state.cooldownEnd && state.cooldownEnd > Date.now()) return;
+    const battle = getCurrentBattle();
+    if (!battle) return;
+    if (battle.cooldownEnd && battle.cooldownEnd > Date.now()) return;
 
     vibrate(50);
     recordEntry(true);
 }
 
 function handleNoClick() {
-    if (state.cooldownEnd && state.cooldownEnd > Date.now()) return;
+    const battle = getCurrentBattle();
+    if (!battle) return;
+    if (battle.cooldownEnd && battle.cooldownEnd > Date.now()) return;
 
     vibrate([50, 50, 50, 50, 50]);
     recordEntry(false);
 }
 
 function recordEntry(isGood) {
+    const battle = getCurrentBattle();
+    if (!battle) return;
+
     const todayKey = getTodayKey();
 
-    if (!state.history[todayKey]) {
-        state.history[todayKey] = { good: 0, bad: 0, entries: [] };
+    if (!battle.history[todayKey]) {
+        battle.history[todayKey] = { good: 0, bad: 0, entries: [] };
     }
 
     const entry = {
@@ -383,24 +527,27 @@ function recordEntry(isGood) {
         isGood: isGood
     };
 
-    state.history[todayKey].entries.push(entry);
+    battle.history[todayKey].entries.push(entry);
 
     if (isGood) {
-        state.history[todayKey].good++;
+        battle.history[todayKey].good++;
     } else {
-        state.history[todayKey].bad++;
+        battle.history[todayKey].bad++;
     }
 
     // Set cooldown
-    state.cooldownEnd = Date.now() + (state.habit.cooldownMinutes * 60 * 1000);
+    battle.cooldownEnd = Date.now() + (battle.habit.cooldownMinutes * 60 * 1000);
 
     saveState();
     updateMainUI();
 }
 
 function handleUndo() {
+    const battle = getCurrentBattle();
+    if (!battle) return;
+
     const todayKey = getTodayKey();
-    const todayData = state.history[todayKey];
+    const todayData = battle.history[todayKey];
 
     if (!todayData || todayData.entries.length === 0) return;
 
@@ -413,7 +560,7 @@ function handleUndo() {
     }
 
     // Reset cooldown
-    state.cooldownEnd = null;
+    battle.cooldownEnd = null;
 
     saveState();
     updateMainUI();
@@ -442,6 +589,7 @@ function initSetup() {
     const nameInput = document.getElementById('habit-name');
     const questionInput = document.getElementById('habit-question');
     const startBtn = document.getElementById('start-battle-btn');
+    const cancelBtn = document.getElementById('cancel-setup-btn');
     const cooldownBtns = document.querySelectorAll('#setup-screen .cooldown-btn');
 
     let selectedCooldown = 5;
@@ -462,53 +610,66 @@ function initSetup() {
     });
 
     startBtn.addEventListener('click', () => {
-        state.habit = {
-            name: nameInput.value.trim(),
-            question: questionInput.value.trim(),
-            cooldownMinutes: selectedCooldown
+        const newBattle = {
+            id: generateId(),
+            habit: {
+                name: nameInput.value.trim(),
+                question: questionInput.value.trim(),
+                cooldownMinutes: selectedCooldown
+            },
+            history: {},
+            cooldownEnd: null
         };
+
+        state.battles.push(newBattle);
         saveState();
-        showMainApp();
+        showBattle(newBattle.id);
     });
-}
 
-function showSetup() {
-    document.getElementById('setup-screen').classList.remove('hidden');
-    document.getElementById('main-app').classList.add('hidden');
-}
-
-function showMainApp() {
-    document.getElementById('setup-screen').classList.add('hidden');
-    document.getElementById('main-app').classList.remove('hidden');
-    updateMainUI();
-    checkInstallPrompt();
+    cancelBtn.addEventListener('click', () => {
+        showOverview();
+    });
 }
 
 // Settings
 function initSettings() {
     const settingsBtn = document.getElementById('settings-btn');
+    const overviewSettingsBtn = document.getElementById('overview-settings-btn');
     const closeBtn = document.getElementById('close-settings');
     const modal = document.getElementById('settings-modal');
     const saveBtn = document.getElementById('save-settings');
     const exportBtn = document.getElementById('export-data');
     const importInput = document.getElementById('import-data');
+    const deleteBtn = document.getElementById('delete-battle');
     const clearBtn = document.getElementById('clear-data');
     const cooldownBtns = document.querySelectorAll('#settings-cooldown .cooldown-btn');
 
     let settingsCooldown = 5;
 
-    settingsBtn.addEventListener('click', () => {
-        // Populate fields
-        document.getElementById('settings-name').value = state.habit.name;
-        document.getElementById('settings-question').value = state.habit.question;
-        settingsCooldown = state.habit.cooldownMinutes;
+    function openSettings() {
+        const battle = getCurrentBattle();
+
+        if (battle) {
+            document.getElementById('settings-name').value = battle.habit.name;
+            document.getElementById('settings-question').value = battle.habit.question;
+            settingsCooldown = battle.habit.cooldownMinutes;
+            deleteBtn.style.display = 'flex';
+        } else {
+            document.getElementById('settings-name').value = '';
+            document.getElementById('settings-question').value = '';
+            settingsCooldown = 5;
+            deleteBtn.style.display = 'none';
+        }
 
         cooldownBtns.forEach(btn => {
             btn.classList.toggle('active', parseInt(btn.dataset.minutes) === settingsCooldown);
         });
 
         modal.classList.remove('hidden');
-    });
+    }
+
+    settingsBtn.addEventListener('click', openSettings);
+    overviewSettingsBtn.addEventListener('click', openSettings);
 
     closeBtn.addEventListener('click', () => {
         modal.classList.add('hidden');
@@ -529,13 +690,19 @@ function initSettings() {
     });
 
     saveBtn.addEventListener('click', () => {
+        const battle = getCurrentBattle();
+        if (!battle) {
+            modal.classList.add('hidden');
+            return;
+        }
+
         const name = document.getElementById('settings-name').value.trim();
         const question = document.getElementById('settings-question').value.trim();
 
         if (name && question) {
-            state.habit.name = name;
-            state.habit.question = question;
-            state.habit.cooldownMinutes = settingsCooldown;
+            battle.habit.name = name;
+            battle.habit.question = question;
+            battle.habit.cooldownMinutes = settingsCooldown;
             saveState();
             updateMainUI();
             modal.classList.add('hidden');
@@ -562,20 +729,29 @@ function initSettings() {
             try {
                 const imported = JSON.parse(event.target.result);
 
-                if (!imported.habit || !imported.habit.name || !imported.habit.question) {
+                // Support both old and new format
+                if (imported.battles) {
+                    state = {
+                        battles: imported.battles,
+                        currentBattleId: null
+                    };
+                } else if (imported.habit) {
+                    // Old single-battle format
+                    const oldBattle = {
+                        id: generateId(),
+                        habit: imported.habit,
+                        history: imported.history || {},
+                        cooldownEnd: imported.cooldownEnd || null
+                    };
+                    state.battles.push(oldBattle);
+                } else {
                     alert('Ongeldig bestandsformaat');
                     return;
                 }
 
-                state = {
-                    habit: imported.habit,
-                    history: imported.history || {},
-                    cooldownEnd: imported.cooldownEnd || null
-                };
-
                 saveState();
                 modal.classList.add('hidden');
-                updateMainUI();
+                showOverview();
                 alert('Data succesvol geïmporteerd!');
             } catch (err) {
                 alert('Fout bij importeren: ' + err.message);
@@ -585,8 +761,21 @@ function initSettings() {
         e.target.value = '';
     });
 
+    deleteBtn.addEventListener('click', () => {
+        const battle = getCurrentBattle();
+        if (!battle) return;
+
+        if (confirm(`Weet je zeker dat je "${battle.habit.name}" wilt verwijderen?`)) {
+            state.battles = state.battles.filter(b => b.id !== battle.id);
+            state.currentBattleId = null;
+            saveState();
+            modal.classList.add('hidden');
+            showOverview();
+        }
+    });
+
     clearBtn.addEventListener('click', () => {
-        if (confirm('Weet je zeker dat je alle data wilt wissen?')) {
+        if (confirm('Weet je zeker dat je ALLE data wilt wissen?')) {
             if (confirm('Dit kan niet ongedaan worden gemaakt. Doorgaan?')) {
                 clearState();
                 location.reload();
@@ -597,14 +786,11 @@ function initSettings() {
 
 // PWA Install
 function checkInstallPrompt() {
-    // Don't show in standalone mode
     if (window.matchMedia('(display-mode: standalone)').matches) return;
 
-    // Check if user dismissed before
     const dismissed = localStorage.getItem(INSTALL_DISMISSED_KEY);
     if (dismissed) return;
 
-    // Show after 5 seconds
     setTimeout(() => {
         const banner = document.getElementById('install-banner');
         banner.classList.remove('hidden');
@@ -616,7 +802,6 @@ function initInstallPrompt() {
     const laterBtn = document.getElementById('install-later');
     const installBtn = document.getElementById('install-now');
 
-    // Capture install prompt
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
@@ -636,7 +821,6 @@ function initInstallPrompt() {
             }
             deferredPrompt = null;
         } else {
-            // Fallback instructions for iOS
             alert('Om de app te installeren:\n\n1. Tik op het deel-icoon\n2. Kies "Zet op beginscherm"');
             banner.classList.add('hidden');
         }
@@ -645,14 +829,30 @@ function initInstallPrompt() {
 
 // Navigation
 function initNavigation() {
+    // Tab navigation
     document.querySelectorAll('.nav-tab').forEach(tab => {
         tab.addEventListener('click', () => {
             handleTabSwitch(tab.dataset.tab);
         });
     });
 
+    // Calendar navigation
     document.getElementById('prev-month').addEventListener('click', () => handleCalendarNav(-1));
     document.getElementById('next-month').addEventListener('click', () => handleCalendarNav(1));
+
+    // Back button
+    document.getElementById('back-btn').addEventListener('click', () => {
+        if (cooldownInterval) {
+            clearInterval(cooldownInterval);
+            cooldownInterval = null;
+        }
+        showOverview();
+    });
+
+    // Add battle button
+    document.getElementById('add-battle-btn').addEventListener('click', () => {
+        showSetup(true);
+    });
 }
 
 // Main Event Listeners
@@ -681,8 +881,8 @@ function init() {
 
     const hasData = loadState();
 
-    if (hasData && state.habit) {
-        showMainApp();
+    if (hasData && state.battles.length > 0) {
+        showOverview();
     } else {
         showSetup();
     }
