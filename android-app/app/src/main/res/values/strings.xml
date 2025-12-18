@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Daily Battle</string>
+    <string name="widget_quick_battle_description">Quick Yes/No buttons for a single battle</string>
+    <string name="widget_score_dashboard_description">Overview of today\'s total score across all battles</string>
+    <string name="widget_multi_battle_description">Quick actions for your top 3 battles that need attention</string>
+</resources>

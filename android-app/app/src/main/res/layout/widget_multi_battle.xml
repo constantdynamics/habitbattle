@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_background"
+    android:padding="8dp">
+
+    <!-- Header -->
+    <LinearLayout
+        android:id="@+id/header_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="8dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="⚔️ Daily Battle"
+            android:textSize="14sp"
+            android:textColor="#ffffff"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/total_score_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Today: +0"
+            android:textSize="12sp"
+            android:textColor="#aaaaaa" />
+    </LinearLayout>
+
+    <!-- Battle slots container -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- Battle slot 1 -->
+        <LinearLayout
+            android:id="@+id/battle_slot_1"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/battle_slot_background"
+            android:padding="4dp"
+            android:layout_marginBottom="4dp">
+
+            <View
+                android:id="@+id/battle_1_indicator"
+                android:layout_width="3dp"
+                android:layout_height="match_parent"
+                android:background="#808080" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="6dp">
+
+                <TextView
+                    android:id="@+id/battle_1_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Battle 1"
+                    android:textSize="12sp"
+                    android:textColor="#ffffff"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+
+                <TextView
+                    android:id="@+id/battle_1_score"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="+0"
+                    android:textSize="10sp"
+                    android:textColor="#aaaaaa" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/battle_1_yes"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_check"
+                android:background="@drawable/button_yes_background"
+                android:scaleType="center"
+                android:contentDescription="Yes" />
+
+            <ImageButton
+                android:id="@+id/battle_1_no"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="4dp"
+                android:src="@drawable/ic_cross"
+                android:background="@drawable/button_no_background"
+                android:scaleType="center"
+                android:contentDescription="No" />
+        </LinearLayout>
+
+        <!-- Battle slot 2 -->
+        <LinearLayout
+            android:id="@+id/battle_slot_2"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/battle_slot_background"
+            android:padding="4dp"
+            android:layout_marginBottom="4dp">
+
+            <View
+                android:id="@+id/battle_2_indicator"
+                android:layout_width="3dp"
+                android:layout_height="match_parent"
+                android:background="#808080" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="6dp">
+
+                <TextView
+                    android:id="@+id/battle_2_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Battle 2"
+                    android:textSize="12sp"
+                    android:textColor="#ffffff"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+
+                <TextView
+                    android:id="@+id/battle_2_score"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="+0"
+                    android:textSize="10sp"
+                    android:textColor="#aaaaaa" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/battle_2_yes"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_check"
+                android:background="@drawable/button_yes_background"
+                android:scaleType="center"
+                android:contentDescription="Yes" />
+
+            <ImageButton
+                android:id="@+id/battle_2_no"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="4dp"
+                android:src="@drawable/ic_cross"
+                android:background="@drawable/button_no_background"
+                android:scaleType="center"
+                android:contentDescription="No" />
+        </LinearLayout>
+
+        <!-- Battle slot 3 -->
+        <LinearLayout
+            android:id="@+id/battle_slot_3"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/battle_slot_background"
+            android:padding="4dp">
+
+            <View
+                android:id="@+id/battle_3_indicator"
+                android:layout_width="3dp"
+                android:layout_height="match_parent"
+                android:background="#808080" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="6dp">
+
+                <TextView
+                    android:id="@+id/battle_3_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Battle 3"
+                    android:textSize="12sp"
+                    android:textColor="#ffffff"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+
+                <TextView
+                    android:id="@+id/battle_3_score"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="+0"
+                    android:textSize="10sp"
+                    android:textColor="#aaaaaa" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/battle_3_yes"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_check"
+                android:background="@drawable/button_yes_background"
+                android:scaleType="center"
+                android:contentDescription="Yes" />
+
+            <ImageButton
+                android:id="@+id/battle_3_no"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="4dp"
+                android:src="@drawable/ic_cross"
+                android:background="@drawable/button_no_background"
+                android:scaleType="center"
+                android:contentDescription="No" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.DailyBattle"
+        android:usesCleartextTraffic="true">
+
+        <!-- Main Activity - WebView wrapper for PWA -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Widget 1: Quick Battle (2x1) -->
+        <receiver
+            android:name=".widgets.QuickBattleWidget"
+            android:exported="true"
+            android:label="Quick Battle">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.constantdynamics.dailybattle.ACTION_YES" />
+                <action android:name="com.constantdynamics.dailybattle.ACTION_NO" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_quick_battle" />
+        </receiver>
+
+        <!-- Widget 2: Score Dashboard (2x2) -->
+        <receiver
+            android:name=".widgets.ScoreDashboardWidget"
+            android:exported="true"
+            android:label="Score Dashboard">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_score_dashboard" />
+        </receiver>
+
+        <!-- Widget 3: Multi-Battle Quick Actions (4x2) -->
+        <receiver
+            android:name=".widgets.MultiBattleWidget"
+            android:exported="true"
+            android:label="Multi-Battle">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.constantdynamics.dailybattle.ACTION_BATTLE_YES" />
+                <action android:name="com.constantdynamics.dailybattle.ACTION_BATTLE_NO" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_multi_battle" />
+        </receiver>
+
+        <!-- Widget Configuration Activity -->
+        <activity
+            android:name=".widgets.WidgetConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.DailyBattle.Dialog">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
+    </application>
+</manifest>

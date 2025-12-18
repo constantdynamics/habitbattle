@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@drawable/widget_background"
+    android:padding="8dp"
+    android:gravity="center_vertical">
+
+    <!-- Score indicator bar -->
+    <View
+        android:id="@+id/score_indicator"
+        android:layout_width="4dp"
+        android:layout_height="match_parent"
+        android:background="#808080" />
+
+    <!-- Battle info -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_marginStart="8dp">
+
+        <TextView
+            android:id="@+id/battle_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Battle"
+            android:textSize="14sp"
+            android:textColor="#ffffff"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/score_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+0"
+                android:textSize="12sp"
+                android:textColor="#aaaaaa" />
+
+            <TextView
+                android:id="@+id/cooldown_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="⏳"
+                android:textSize="12sp"
+                android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Yes button -->
+    <ImageButton
+        android:id="@+id/btn_yes"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_check"
+        android:background="@drawable/button_yes_background"
+        android:scaleType="center"
+        android:contentDescription="Yes" />
+
+    <!-- No button -->
+    <ImageButton
+        android:id="@+id/btn_no"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="4dp"
+        android:src="@drawable/ic_cross"
+        android:background="@drawable/button_no_background"
+        android:scaleType="center"
+        android:contentDescription="No" />
+
+</LinearLayout>
