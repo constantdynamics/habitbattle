@@ -3,13 +3,17 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/Theme.DailyBattle"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="false">
 
         <!-- Main Activity - WebView wrapper for PWA -->
         <activity
@@ -78,6 +82,26 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
+
+        <!-- Notification Receiver for actionable notifications -->
+        <receiver
+            android:name=".notifications.BattleNotificationReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.constantdynamics.dailybattle.SHOW_NOTIFICATION" />
+                <action android:name="com.constantdynamics.dailybattle.NOTIFICATION_YES" />
+                <action android:name="com.constantdynamics.dailybattle.NOTIFICATION_NO" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Boot receiver to reschedule notifications after device restart -->
+        <receiver
+            android:name=".notifications.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
     </application>
 </manifest>

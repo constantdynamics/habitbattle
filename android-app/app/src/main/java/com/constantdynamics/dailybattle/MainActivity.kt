@@ -1,11 +1,28 @@
 package com.constantdynamics.dailybattle
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.appwidget.AppWidgetManager
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import android.webkit.WebResourceRequest
 import android.webkit.WebViewClient
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import java.net.URI
+import com.constantdynamics.dailybattle.widgets.QuickBattleWidget
+import com.constantdynamics.dailybattle.widgets.ScoreDashboardWidget
+import com.constantdynamics.dailybattle.widgets.MultiBattleWidget
+import com.constantdynamics.dailybattle.notifications.BattleNotificationReceiver
+import com.constantdynamics.dailybattle.notifications.NotificationScheduler
 
 /**
  * Main Activity - WebView wrapper for the Daily Battle PWA
@@ -14,10 +31,28 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
 
+    // Alleen deze domeinen zijn toegestaan (beveiliging)
+    private val allowedHosts = listOf(
+        "constantdynamics.github.io"
+    )
+
+    // Permission request launcher for notifications
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            // Permission granted, create notification channel
+            BattleNotificationReceiver.createNotificationChannel(this)
+        }
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // Request notification permission on Android 13+
+        requestNotificationPermission()
 
         webView = findViewById(R.id.webview)
 
@@ -25,15 +60,25 @@ class MainActivity : AppCompatActivity() {
             javaScriptEnabled = true
             domStorageEnabled = true
             databaseEnabled = true
-            allowFileAccess = true
+            allowFileAccess = false  // Beveiligd: geen toegang tot lokale bestanden
             useWideViewPort = true
             loadWithOverviewMode = true
+            // Extra beveiliging
+            allowContentAccess = false
+            setSupportMultipleWindows(false)
         }
 
         // Add JavaScript interface for data sync
         webView.addJavascriptInterface(DataSyncInterface(this), "AndroidBridge")
 
         webView.webViewClient = object : WebViewClient() {
+
+            // Blokkeer alle URLs behalve toegestane domeinen
+            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                val url = request?.url?.toString() ?: return true
+                return !isUrlAllowed(url)
+            }
+
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 // Inject sync script after page loads
@@ -43,6 +88,18 @@ class MainActivity : AppCompatActivity() {
 
         // Load the PWA
         webView.loadUrl("https://constantdynamics.github.io/habitbattle/")
+    }
+
+    // Controleer of URL is toegestaan
+    private fun isUrlAllowed(url: String): Boolean {
+        return try {
+            val uri = URI(url)
+            val host = uri.host ?: return false
+            // Moet HTTPS zijn en op toegestaan domein
+            uri.scheme == "https" && allowedHosts.any { host.endsWith(it) }
+        } catch (e: Exception) {
+            false
+        }
     }
 
     private fun injectSyncScript() {
@@ -85,6 +142,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            when {
+                ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED -> {
+                    // Permission already granted
+                    BattleNotificationReceiver.createNotificationChannel(this)
+                }
+                else -> {
+                    // Request permission
+                    requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        } else {
+            // No permission needed on older versions
+            BattleNotificationReceiver.createNotificationChannel(this)
+        }
+    }
+
     /**
      * JavaScript interface for syncing data between WebView and native Android
      */
@@ -106,18 +184,63 @@ class MainActivity : AppCompatActivity() {
             return prefs.getString("dailyBattle", null)
         }
 
+        @JavascriptInterface
+        fun setNotificationsEnabled(enabled: Boolean) {
+            NotificationScheduler.setEnabled(context, enabled)
+        }
+
+        @JavascriptInterface
+        fun setNotificationSettings(intervalMinutes: Int, startHour: Int, endHour: Int, randomTiming: Boolean) {
+            NotificationScheduler.setSettings(context, intervalMinutes, startHour, endHour, randomTiming)
+        }
+
+        @JavascriptInterface
+        fun areNotificationsEnabled(): Boolean {
+            return NotificationScheduler.isEnabled(context)
+        }
+
+        @JavascriptInterface
+        fun testNotification() {
+            // Show a test notification for the first battle
+            val state = BattleDataManager.loadState(context)
+            if (state.battles.isNotEmpty()) {
+                val battle = state.battles[0]
+                BattleNotificationReceiver.showBattleNotification(
+                    context,
+                    battle.id,
+                    System.currentTimeMillis().toInt()
+                )
+            }
+        }
+
         private fun updateAllWidgets() {
-            val intent = android.content.Intent(context, widgets.QuickBattleWidget::class.java)
-            intent.action = android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE
-            context.sendBroadcast(intent)
+            // Run on main thread since JavaScript interface runs on background thread
+            Handler(Looper.getMainLooper()).post {
+                val appWidgetManager = AppWidgetManager.getInstance(context)
+                val componentName1 = android.content.ComponentName(context, QuickBattleWidget::class.java)
+                val componentName2 = android.content.ComponentName(context, ScoreDashboardWidget::class.java)
+                val componentName3 = android.content.ComponentName(context, MultiBattleWidget::class.java)
 
-            val intent2 = android.content.Intent(context, widgets.ScoreDashboardWidget::class.java)
-            intent2.action = android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE
-            context.sendBroadcast(intent2)
+                // Get all widget IDs and update each one
+                val widgetIds1 = appWidgetManager.getAppWidgetIds(componentName1)
+                val widgetIds2 = appWidgetManager.getAppWidgetIds(componentName2)
+                val widgetIds3 = appWidgetManager.getAppWidgetIds(componentName3)
 
-            val intent3 = android.content.Intent(context, widgets.MultiBattleWidget::class.java)
-            intent3.action = android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE
-            context.sendBroadcast(intent3)
+                // Update Quick Battle widgets
+                for (widgetId in widgetIds1) {
+                    QuickBattleWidget.updateWidget(context, appWidgetManager, widgetId)
+                }
+
+                // Update Score Dashboard widgets
+                for (widgetId in widgetIds2) {
+                    ScoreDashboardWidget.updateWidget(context, appWidgetManager, widgetId)
+                }
+
+                // Update Multi-Battle widgets
+                for (widgetId in widgetIds3) {
+                    MultiBattleWidget.updateWidget(context, appWidgetManager, widgetId)
+                }
+            }
         }
     }
 }

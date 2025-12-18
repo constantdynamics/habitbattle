@@ -143,6 +143,7 @@
                     <div class="form-group">
                         <label>Cooldown Periode</label>
                         <div class="cooldown-options">
+                            <button class="cooldown-btn" data-minutes="1">1 min</button>
                             <button class="cooldown-btn active" data-minutes="5">5 min</button>
                             <button class="cooldown-btn" data-minutes="10">10 min</button>
                             <button class="cooldown-btn" data-minutes="15">15 min</button>
@@ -300,6 +301,7 @@
                     <div class="form-group">
                         <label>Cooldown</label>
                         <div class="cooldown-options" id="settings-cooldown">
+                            <button class="cooldown-btn" data-minutes="1">1 min</button>
                             <button class="cooldown-btn" data-minutes="5">5 min</button>
                             <button class="cooldown-btn" data-minutes="10">10 min</button>
                             <button class="cooldown-btn" data-minutes="15">15 min</button>
@@ -324,12 +326,12 @@
                     <div class="form-group" id="notification-options">
                         <label>Frequentie</label>
                         <div class="slider-container">
-                            <input type="range" id="notification-slider" min="0" max="9" value="2" class="notification-slider">
-                            <div class="slider-value" id="slider-value">Elke 2 uur</div>
+                            <input type="range" id="notification-slider" min="0" max="13" value="6" class="notification-slider">
+                            <div class="slider-value" id="slider-value">Elk uur</div>
                         </div>
                         <div class="slider-labels">
-                            <span>1u</span>
-                            <span>24u</span>
+                            <span>5min</span>
+                            <span>12u</span>
                             <span>1x/week</span>
                         </div>
                     </div>
@@ -367,7 +369,7 @@
 
                 <div class="settings-section">
                     <p style="text-align: center; color: #666; font-size: 12px; margin-top: 16px;">
-                        Daily Battle v1.2
+                        Daily Battle v1.5
                     </p>
                 </div>
             </div>

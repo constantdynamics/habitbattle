@@ -74,12 +74,17 @@ const BATTLE_PRESETS = [
 // Notification settings
 let notificationSettings = {
     enabled: false,
-    intervalIndex: 2, // Index in INTERVAL_OPTIONS
+    intervalIndex: 6, // Index in INTERVAL_OPTIONS (default: 1 uur)
     randomTiming: false
 };
 
-// Interval options: 1h, 2h, 3h, 4h, 6h, 8h, 12h, 24h, 3 days, 1 week
+// Interval options: 5min, 10min, 15min, 30min, 45min, 1h, 2h, 3h, 4h, 6h, 8h, 12h, 24h, 1 week
 const INTERVAL_OPTIONS = [
+    { hours: 5/60, label: 'Elke 5 min' },
+    { hours: 10/60, label: 'Elke 10 min' },
+    { hours: 15/60, label: 'Elke 15 min' },
+    { hours: 30/60, label: 'Elke 30 min' },
+    { hours: 45/60, label: 'Elke 45 min' },
     { hours: 1, label: 'Elk uur' },
     { hours: 2, label: 'Elke 2 uur' },
     { hours: 3, label: 'Elke 3 uur' },
@@ -88,7 +93,6 @@ const INTERVAL_OPTIONS = [
     { hours: 8, label: 'Elke 8 uur' },
     { hours: 12, label: 'Elke 12 uur' },
     { hours: 24, label: 'Elke 24 uur' },
-    { hours: 72, label: 'Elke 3 dagen' },
     { hours: 168, label: '1x per week' }
 ];
 
@@ -1112,12 +1116,26 @@ function loadNotificationSettings() {
 function saveNotificationSettings() {
     try {
         localStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(notificationSettings));
+
+        // Sync with Android app if available
+        if (window.AndroidBridge) {
+            window.AndroidBridge.setNotificationsEnabled(notificationSettings.enabled);
+            const option = INTERVAL_OPTIONS[notificationSettings.intervalIndex];
+            const intervalMinutes = Math.round(option.hours * 60);
+            window.AndroidBridge.setNotificationSettings(intervalMinutes, 8, 22, notificationSettings.randomTiming);
+        }
     } catch (e) {
         console.error('Failed to save notification settings:', e);
     }
 }
 
 async function requestNotificationPermission() {
+    // Check if running in Android app with native notifications
+    if (window.AndroidBridge) {
+        // Android app handles notifications natively
+        return true;
+    }
+
     if (!('Notification' in window)) {
         alert('Deze browser ondersteunt geen notificaties');
         return false;

@@ -11,8 +11,8 @@ android {
         applicationId "com.constantdynamics.dailybattle"
         minSdk 26
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 6
+        versionName "1.5"
     }
 
     buildTypes {
@@ -38,4 +38,5 @@ dependencies {
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.webkit:webkit:1.9.0'
     implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'androidx.activity:activity-ktx:1.8.2'
 }
