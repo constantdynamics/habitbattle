@@ -5,6 +5,7 @@ const INSTALL_DISMISSED_KEY = 'installDismissed';
 const NOTIFICATION_SETTINGS_KEY = 'notificationSettings';
 const THEME_KEY = 'dailyBattleTheme';
 const SORT_KEY = 'dailyBattleSort';
+const ONBOARDING_COMPLETED_KEY = 'dailyBattleOnboardingCompleted';
 
 // Battle Presets - 50 battles organized by category
 const BATTLE_PRESETS = [
@@ -1528,6 +1529,7 @@ function registerServiceWorker() {
 // Initialize App
 function init() {
     registerServiceWorker();
+    addConfettiStyles();
 
     // Load theme first for immediate visual
     const savedTheme = localStorage.getItem(THEME_KEY);
@@ -1537,6 +1539,23 @@ function init() {
     }
 
     const hasData = loadState();
+
+    // Check if onboarding should be shown
+    if (shouldShowOnboarding()) {
+        initOnboarding();
+        // Still initialize other components
+        initSetup();
+        initEventListeners();
+        initPresets();
+        initNotifications();
+        initSort();
+        initTheme();
+        initCalendarOverview();
+        return;
+    }
+
+    // Hide onboarding if not needed
+    hideOnboarding();
 
     if (hasData && state.battles.length > 0) {
         showOverview();
@@ -1551,6 +1570,637 @@ function init() {
     initSort();
     initTheme();
     initCalendarOverview();
+}
+
+// ============================================
+// ONBOARDING SYSTEM
+// ============================================
+
+const ONBOARDING_EXAMPLES = [
+    "Telefoon te vaak checken",
+    "Onderuit zakken",
+    "Nagels bijten",
+    "Te snel eten",
+    "Piekeren",
+    "Uitstelgedrag",
+    "Social media scrollen",
+    "Ongezond snacken"
+];
+
+const SPEECH_BUBBLE_DATA = [
+    { text: "Niet meer nagelbijten", color: "purple", delay: 0 },
+    { text: "Minder telefoon checken", color: "green", delay: 0.3 },
+    { text: "Rechtop zitten", color: "orange", delay: 0.6 },
+    { text: "Minder snacken", color: "red", delay: 0.9 },
+    { text: "Niet uitstellen", color: "blue", delay: 1.2 },
+    { text: "Bewuster ademen", color: "purple", delay: 1.5 }
+];
+
+let onboardingState = {
+    currentScreen: 1,
+    totalScreens: 7,
+    touchStartX: 0,
+    touchEndX: 0,
+    isDragging: false,
+    demoGood: 0,
+    demoBad: 0,
+    demoClicks: 0,
+    screen5Animated: false,
+    swipeHintShown: false
+};
+
+// Check if onboarding should be shown
+function shouldShowOnboarding() {
+    const completed = localStorage.getItem(ONBOARDING_COMPLETED_KEY);
+    const hasData = localStorage.getItem(STORAGE_KEY);
+    return !completed && !hasData;
+}
+
+// Mark onboarding as completed
+function completeOnboarding() {
+    localStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
+}
+
+// Initialize onboarding
+function initOnboarding() {
+    if (!shouldShowOnboarding()) {
+        hideOnboarding();
+        return;
+    }
+
+    showOnboarding();
+    setupOnboardingEventListeners();
+    initScreen1FloatingExamples();
+    initScreen2SpeechBubbles();
+    initScreen6Demo();
+    initScreen7Form();
+}
+
+function showOnboarding() {
+    const onboarding = document.getElementById('onboarding');
+    if (onboarding) {
+        onboarding.classList.remove('hidden');
+        onboarding.style.display = 'block';
+    }
+}
+
+function hideOnboarding() {
+    const onboarding = document.getElementById('onboarding');
+    if (onboarding) {
+        onboarding.classList.add('hidden');
+        onboarding.style.display = 'none';
+    }
+}
+
+// Setup all event listeners for onboarding
+function setupOnboardingEventListeners() {
+    const screensContainer = document.getElementById('onboarding-screens');
+    const skipBtn = document.getElementById('onboarding-skip');
+    const progressDots = document.querySelectorAll('.progress-dot');
+
+    if (!screensContainer) return;
+
+    // Touch events for swipe
+    screensContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+    screensContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+    screensContainer.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    // Mouse events for desktop
+    screensContainer.addEventListener('mousedown', handleMouseDown);
+    screensContainer.addEventListener('mousemove', handleMouseMove);
+    screensContainer.addEventListener('mouseup', handleMouseUp);
+    screensContainer.addEventListener('mouseleave', handleMouseUp);
+
+    // Skip button
+    if (skipBtn) {
+        skipBtn.addEventListener('click', handleSkipOnboarding);
+    }
+
+    // Progress dots click
+    progressDots.forEach(dot => {
+        dot.addEventListener('click', () => {
+            const screen = parseInt(dot.dataset.screen);
+            if (screen && screen <= onboardingState.currentScreen + 1) {
+                goToScreen(screen);
+            }
+        });
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', handleOnboardingKeydown);
+}
+
+// Touch handlers
+function handleTouchStart(e) {
+    // Don't capture touch on buttons or inputs
+    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+
+    onboardingState.touchStartX = e.touches[0].clientX;
+    onboardingState.isDragging = true;
+}
+
+function handleTouchMove(e) {
+    if (!onboardingState.isDragging) return;
+
+    // Don't capture touch on screen 6 demo buttons or screen 7 form
+    if (onboardingState.currentScreen === 6 || onboardingState.currentScreen === 7) {
+        const target = e.target;
+        if (target.closest('.demo-card') || target.closest('.setup-card')) {
+            return;
+        }
+    }
+
+    onboardingState.touchEndX = e.touches[0].clientX;
+
+    // Calculate drag distance for visual feedback
+    const diff = onboardingState.touchStartX - onboardingState.touchEndX;
+    const screenWidth = window.innerWidth;
+    const currentOffset = (onboardingState.currentScreen - 1) * -100;
+    const dragOffset = (diff / screenWidth) * 100;
+
+    // Limit drag at edges
+    const maxOffset = (onboardingState.totalScreens - 1) * -100;
+    let newOffset = currentOffset - dragOffset;
+    newOffset = Math.max(maxOffset - 10, Math.min(10, newOffset));
+
+    const container = document.getElementById('onboarding-screens');
+    if (container) {
+        container.style.transition = 'none';
+        container.style.transform = `translateX(${newOffset}%)`;
+    }
+}
+
+function handleTouchEnd(e) {
+    if (!onboardingState.isDragging) return;
+    onboardingState.isDragging = false;
+
+    const container = document.getElementById('onboarding-screens');
+    if (container) {
+        container.style.transition = 'transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1)';
+    }
+
+    const diff = onboardingState.touchStartX - onboardingState.touchEndX;
+    const threshold = 50; // Minimum swipe distance
+
+    if (Math.abs(diff) > threshold) {
+        if (diff > 0 && onboardingState.currentScreen < onboardingState.totalScreens) {
+            // Swipe left - next screen
+            goToScreen(onboardingState.currentScreen + 1);
+        } else if (diff < 0 && onboardingState.currentScreen > 1) {
+            // Swipe right - previous screen
+            goToScreen(onboardingState.currentScreen - 1);
+        } else {
+            // Snap back
+            goToScreen(onboardingState.currentScreen);
+        }
+    } else {
+        // Snap back if not enough swipe
+        goToScreen(onboardingState.currentScreen);
+    }
+
+    // Hide swipe hint after first swipe
+    if (!onboardingState.swipeHintShown && diff > threshold) {
+        onboardingState.swipeHintShown = true;
+        const hint = document.getElementById('swipe-hint');
+        if (hint) {
+            hint.style.opacity = '0';
+            setTimeout(() => hint.style.display = 'none', 300);
+        }
+    }
+}
+
+// Mouse handlers (for desktop)
+function handleMouseDown(e) {
+    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+    onboardingState.touchStartX = e.clientX;
+    onboardingState.isDragging = true;
+}
+
+function handleMouseMove(e) {
+    if (!onboardingState.isDragging) return;
+    e.preventDefault();
+    onboardingState.touchEndX = e.clientX;
+}
+
+function handleMouseUp(e) {
+    if (!onboardingState.isDragging) return;
+
+    const diff = onboardingState.touchStartX - onboardingState.touchEndX;
+    const threshold = 50;
+
+    onboardingState.isDragging = false;
+
+    if (Math.abs(diff) > threshold) {
+        if (diff > 0 && onboardingState.currentScreen < onboardingState.totalScreens) {
+            goToScreen(onboardingState.currentScreen + 1);
+        } else if (diff < 0 && onboardingState.currentScreen > 1) {
+            goToScreen(onboardingState.currentScreen - 1);
+        }
+    }
+}
+
+// Keyboard handler
+function handleOnboardingKeydown(e) {
+    const onboarding = document.getElementById('onboarding');
+    if (!onboarding || onboarding.classList.contains('hidden')) return;
+
+    if (e.key === 'ArrowRight' && onboardingState.currentScreen < onboardingState.totalScreens) {
+        goToScreen(onboardingState.currentScreen + 1);
+    } else if (e.key === 'ArrowLeft' && onboardingState.currentScreen > 1) {
+        goToScreen(onboardingState.currentScreen - 1);
+    } else if (e.key === 'Escape') {
+        handleSkipOnboarding();
+    }
+}
+
+// Navigate to specific screen
+function goToScreen(screenNumber) {
+    if (screenNumber < 1 || screenNumber > onboardingState.totalScreens) return;
+
+    onboardingState.currentScreen = screenNumber;
+
+    // Update screen position
+    const container = document.getElementById('onboarding-screens');
+    if (container) {
+        container.style.transition = 'transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1)';
+        container.style.transform = `translateX(${(screenNumber - 1) * -100}%)`;
+    }
+
+    // Update progress dots
+    updateProgressDots();
+
+    // Update skip button visibility
+    updateSkipButton();
+
+    // Trigger screen-specific animations
+    triggerScreenAnimations(screenNumber);
+}
+
+function updateProgressDots() {
+    const dots = document.querySelectorAll('.progress-dot');
+    dots.forEach(dot => {
+        const screen = parseInt(dot.dataset.screen);
+        dot.classList.remove('active', 'completed');
+
+        if (screen === onboardingState.currentScreen) {
+            dot.classList.add('active');
+        } else if (screen < onboardingState.currentScreen) {
+            dot.classList.add('completed');
+        }
+    });
+}
+
+function updateSkipButton() {
+    const skipBtn = document.getElementById('onboarding-skip');
+    if (skipBtn) {
+        // Hide skip button on last screen
+        skipBtn.style.opacity = onboardingState.currentScreen === 7 ? '0' : '1';
+        skipBtn.style.pointerEvents = onboardingState.currentScreen === 7 ? 'none' : 'auto';
+    }
+}
+
+function triggerScreenAnimations(screenNumber) {
+    switch (screenNumber) {
+        case 5:
+            if (!onboardingState.screen5Animated) {
+                animateScreen5();
+                onboardingState.screen5Animated = true;
+            }
+            break;
+    }
+}
+
+// Skip onboarding
+function handleSkipOnboarding() {
+    // Go to screen 7 (setup)
+    goToScreen(7);
+}
+
+// Screen 1: Floating examples
+function initScreen1FloatingExamples() {
+    const container = document.getElementById('floating-examples-1');
+    if (!container) return;
+
+    ONBOARDING_EXAMPLES.forEach((example, index) => {
+        const bubble = document.createElement('div');
+        bubble.className = 'floating-bubble';
+        bubble.textContent = example;
+        bubble.style.animationDelay = `${index * 0.5}s`;
+
+        // Random positioning
+        const angle = (index / ONBOARDING_EXAMPLES.length) * 2 * Math.PI;
+        const radius = 30 + Math.random() * 20;
+        const x = 50 + Math.cos(angle) * radius;
+        const y = 50 + Math.sin(angle) * radius;
+
+        bubble.style.left = `${x}%`;
+        bubble.style.top = `${y}%`;
+
+        container.appendChild(bubble);
+    });
+}
+
+// Screen 2: Speech bubbles
+function initScreen2SpeechBubbles() {
+    const container = document.getElementById('speech-bubbles');
+    if (!container) return;
+
+    SPEECH_BUBBLE_DATA.forEach((data, index) => {
+        const bubble = document.createElement('div');
+        bubble.className = `speech-bubble speech-bubble-${data.color}`;
+        bubble.innerHTML = `<span class="speech-text">${data.text}</span>`;
+        bubble.style.animationDelay = `${data.delay}s`;
+
+        container.appendChild(bubble);
+    });
+}
+
+// Screen 5: Animated score demo
+function animateScreen5() {
+    const goodEl = document.getElementById('demo-good');
+    const badEl = document.getElementById('demo-bad');
+    const balanceEl = document.getElementById('demo-balance');
+    const colorbarEl = document.getElementById('demo-colorbar-fill');
+
+    if (!goodEl || !badEl || !balanceEl || !colorbarEl) return;
+
+    // Animation sequence: simulate a day of tracking
+    const sequence = [
+        { good: 1, bad: 0, delay: 500 },
+        { good: 1, bad: 1, delay: 800 },
+        { good: 2, bad: 1, delay: 600 },
+        { good: 2, bad: 2, delay: 700 },
+        { good: 3, bad: 2, delay: 500 },
+        { good: 4, bad: 2, delay: 600 },
+        { good: 5, bad: 2, delay: 500 },
+        { good: 6, bad: 3, delay: 700 },
+        { good: 7, bad: 3, delay: 600 },
+        { good: 8, bad: 3, delay: 500 }
+    ];
+
+    let totalDelay = 0;
+
+    sequence.forEach((step, index) => {
+        totalDelay += step.delay;
+
+        setTimeout(() => {
+            goodEl.textContent = step.good;
+            badEl.textContent = step.bad;
+
+            const balance = step.good - step.bad;
+            balanceEl.textContent = balance > 0 ? `+${balance}` : balance.toString();
+            balanceEl.className = 'demo-balance ' + (balance > 0 ? 'positive' : balance < 0 ? 'negative' : 'neutral');
+
+            // Update color bar
+            const ratio = step.good / (step.good + step.bad);
+            colorbarEl.style.width = `${ratio * 100}%`;
+            colorbarEl.style.backgroundPosition = `${(1 - ratio) * 100}% 0`;
+
+            // Add pop animation
+            goodEl.classList.add('pop');
+            setTimeout(() => goodEl.classList.remove('pop'), 200);
+        }, totalDelay);
+    });
+}
+
+// Screen 6: Interactive demo
+function initScreen6Demo() {
+    const yesBtn = document.getElementById('demo-yes-btn');
+    const noBtn = document.getElementById('demo-no-btn');
+    const verderBtn = document.getElementById('demo-verder-btn');
+
+    if (!yesBtn || !noBtn) return;
+
+    yesBtn.addEventListener('click', () => handleDemoClick(true));
+    noBtn.addEventListener('click', () => handleDemoClick(false));
+
+    if (verderBtn) {
+        verderBtn.addEventListener('click', () => goToScreen(7));
+    }
+}
+
+function handleDemoClick(isGood) {
+    const goodEl = document.getElementById('demo-live-good');
+    const badEl = document.getElementById('demo-live-bad');
+    const successEl = document.getElementById('demo-success');
+
+    if (!goodEl || !badEl) return;
+
+    if (isGood) {
+        onboardingState.demoGood++;
+        goodEl.textContent = onboardingState.demoGood;
+        goodEl.classList.add('pop');
+        setTimeout(() => goodEl.classList.remove('pop'), 200);
+    } else {
+        onboardingState.demoBad++;
+        badEl.textContent = onboardingState.demoBad;
+        badEl.classList.add('pop');
+        setTimeout(() => badEl.classList.remove('pop'), 200);
+    }
+
+    onboardingState.demoClicks++;
+
+    // Vibrate
+    vibrate(isGood ? 50 : [50, 50, 50]);
+
+    // Show success message after 3 clicks
+    if (onboardingState.demoClicks >= 3 && successEl) {
+        successEl.classList.remove('hidden');
+        successEl.classList.add('show');
+    }
+}
+
+// Screen 7: Setup form
+function initScreen7Form() {
+    const nameInput = document.getElementById('onboard-habit-name');
+    const questionInput = document.getElementById('onboard-habit-question');
+    const startBtn = document.getElementById('onboard-start-btn');
+    const presetsBtn = document.getElementById('onboard-presets-btn');
+    const cooldownBtns = document.querySelectorAll('.setup-cooldown-btn');
+
+    let selectedCooldown = 5;
+
+    function validateForm() {
+        if (startBtn) {
+            startBtn.disabled = !nameInput?.value.trim() || !questionInput?.value.trim();
+        }
+    }
+
+    if (nameInput) {
+        nameInput.addEventListener('input', validateForm);
+    }
+
+    if (questionInput) {
+        questionInput.addEventListener('input', validateForm);
+    }
+
+    cooldownBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            cooldownBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedCooldown = parseInt(btn.dataset.minutes);
+        });
+    });
+
+    if (startBtn) {
+        startBtn.addEventListener('click', () => {
+            if (!nameInput?.value.trim() || !questionInput?.value.trim()) return;
+
+            // Create the battle
+            const newBattle = {
+                id: generateId(),
+                habit: {
+                    name: nameInput.value.trim(),
+                    question: questionInput.value.trim(),
+                    cooldownMinutes: selectedCooldown
+                },
+                history: {},
+                cooldownEnd: null
+            };
+
+            state.battles.push(newBattle);
+            saveState();
+            completeOnboarding();
+
+            // Show confetti
+            showConfetti();
+
+            // Hide onboarding and show battle
+            setTimeout(() => {
+                hideOnboarding();
+                showBattle(newBattle.id);
+            }, 1500);
+        });
+    }
+
+    if (presetsBtn) {
+        presetsBtn.addEventListener('click', () => {
+            // Open presets modal
+            const presetsModal = document.getElementById('presets-modal');
+            const searchInput = document.getElementById('presets-search-input');
+
+            if (presetsModal) {
+                // Override preset selection to fill onboarding form
+                const presetsList = document.getElementById('presets-list');
+
+                // Render presets
+                renderPresetsForOnboarding();
+                presetsModal.classList.remove('hidden');
+            }
+        });
+    }
+}
+
+function renderPresetsForOnboarding() {
+    const presetsList = document.getElementById('presets-list');
+    const nameInput = document.getElementById('onboard-habit-name');
+    const questionInput = document.getElementById('onboard-habit-question');
+    const startBtn = document.getElementById('onboard-start-btn');
+    const presetsModal = document.getElementById('presets-modal');
+
+    if (!presetsList) return;
+
+    // Group by category
+    const grouped = {};
+    BATTLE_PRESETS.forEach(preset => {
+        if (!grouped[preset.category]) {
+            grouped[preset.category] = [];
+        }
+        grouped[preset.category].push(preset);
+    });
+
+    let html = '';
+    for (const [category, presets] of Object.entries(grouped)) {
+        html += `<div class="preset-category">${category}</div>`;
+        presets.forEach(preset => {
+            html += `
+                <div class="preset-item" data-name="${escapeHtml(preset.name)}" data-question="${escapeHtml(preset.question)}">
+                    <div class="preset-item-name">${escapeHtml(preset.name)}</div>
+                    <div class="preset-item-question">${escapeHtml(preset.question)}</div>
+                </div>
+            `;
+        });
+    }
+
+    presetsList.innerHTML = html;
+
+    // Add click listeners
+    presetsList.querySelectorAll('.preset-item').forEach(item => {
+        item.addEventListener('click', () => {
+            if (nameInput) nameInput.value = item.dataset.name;
+            if (questionInput) questionInput.value = item.dataset.question;
+            if (startBtn) startBtn.disabled = false;
+            if (presetsModal) presetsModal.classList.add('hidden');
+        });
+    });
+}
+
+// Confetti animation
+function showConfetti() {
+    const colors = ['#22c55e', '#eab308', '#ef4444', '#8b5cf6', '#3b82f6'];
+    const confettiCount = 100;
+
+    for (let i = 0; i < confettiCount; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti-piece';
+        confetti.style.cssText = `
+            position: fixed;
+            width: ${Math.random() * 10 + 5}px;
+            height: ${Math.random() * 10 + 5}px;
+            background: ${colors[Math.floor(Math.random() * colors.length)]};
+            left: ${Math.random() * 100}vw;
+            top: -20px;
+            opacity: 1;
+            z-index: 10001;
+            border-radius: ${Math.random() > 0.5 ? '50%' : '0'};
+            animation: confetti-fall ${Math.random() * 2 + 2}s linear forwards;
+            animation-delay: ${Math.random() * 0.5}s;
+        `;
+
+        document.body.appendChild(confetti);
+
+        // Remove after animation
+        setTimeout(() => confetti.remove(), 4000);
+    }
+}
+
+// Add confetti keyframes dynamically
+function addConfettiStyles() {
+    if (document.getElementById('confetti-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'confetti-styles';
+    style.textContent = `
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .pop {
+            animation: pop-scale 0.2s ease-out;
+        }
+
+        @keyframes pop-scale {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .demo-balance.positive { color: var(--good-color); }
+        .demo-balance.negative { color: var(--bad-color); }
+        .demo-balance.neutral { color: var(--text-muted); }
+
+        .demo-success.show {
+            animation: slide-up-fade 0.4s ease-out forwards;
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 // Start

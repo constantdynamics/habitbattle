@@ -14,6 +14,182 @@
 </head>
 <body>
     <div id="app">
+        <!-- Onboarding Screen -->
+        <div id="onboarding" class="onboarding">
+            <!-- Progress Dots -->
+            <div class="onboarding-progress">
+                <span class="progress-dot active" data-screen="1"></span>
+                <span class="progress-dot" data-screen="2"></span>
+                <span class="progress-dot" data-screen="3"></span>
+                <span class="progress-dot" data-screen="4"></span>
+                <span class="progress-dot" data-screen="5"></span>
+                <span class="progress-dot" data-screen="6"></span>
+                <span class="progress-dot" data-screen="7"></span>
+            </div>
+
+            <!-- Skip Button -->
+            <button id="onboarding-skip" class="onboarding-skip">Sla over</button>
+
+            <!-- Screen Container (swipeable) -->
+            <div class="onboarding-screens" id="onboarding-screens">
+
+                <!-- Screen 1: Frustration Hook -->
+                <div class="onboarding-screen" data-screen="1">
+                    <div class="screen1-content">
+                        <div class="screen1-emoji">😔</div>
+                        <h1 class="screen1-title">Die ene gewoonte die maar niet lukt...</h1>
+                        <p class="screen1-subtitle">Je weet precies wat je anders moet doen.<br>Toch val je steeds terug in het oude patroon.</p>
+                    </div>
+                    <div class="floating-examples" id="floating-examples-1">
+                        <!-- Filled by JS -->
+                    </div>
+                    <div class="swipe-hint" id="swipe-hint">
+                        <span>→</span>
+                    </div>
+                </div>
+
+                <!-- Screen 2: Floating Examples -->
+                <div class="onboarding-screen" data-screen="2">
+                    <h2 class="screen2-title">Voor welke verandering wil je gaan?</h2>
+                    <div class="speech-bubbles-container" id="speech-bubbles">
+                        <!-- Filled by JS with animated speech bubbles -->
+                    </div>
+                </div>
+
+                <!-- Screen 3: The Problem -->
+                <div class="onboarding-screen" data-screen="3">
+                    <h2 class="screen3-title">Van voornemen naar vergeten in <span class="highlight-orange">10 minuten</span></h2>
+                    <div class="thought-clouds">
+                        <div class="thought-cloud optimistic">
+                            <span class="thought-text">"Vandaag ga ik rechtop zitten"</span>
+                            <div class="thought-bubble-tail"></div>
+                        </div>
+                        <div class="time-transition">
+                            <span class="clock-icon">⏰</span>
+                            <span class="time-text">10 minuten later...</span>
+                        </div>
+                        <div class="thought-cloud frustrated">
+                            <span class="thought-text">"Waarom zit ik <em>alwéér</em> onderuit?"</span>
+                            <div class="thought-bubble-tail"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Screen 4: The Solution -->
+                <div class="onboarding-screen" data-screen="4">
+                    <div class="screen4-title">
+                        <span>Van <span class="color-red">vergeten</span> naar <span class="color-yellow">merken</span>.</span>
+                        <span>Van <span class="color-yellow">merken</span> naar <span class="color-green">veranderen</span>.</span>
+                    </div>
+                    <div class="phone-mockup">
+                        <div class="phone-screen">
+                            <div class="mock-question" id="mock-question">Zit je rechtop?</div>
+                            <div class="mock-score">
+                                <span class="mock-good" id="mock-good">0</span>
+                                <span class="mock-vs">vs</span>
+                                <span class="mock-bad" id="mock-bad">0</span>
+                            </div>
+                            <div class="mock-buttons">
+                                <div class="mock-btn mock-yes">✓</div>
+                                <div class="mock-btn mock-no">✕</div>
+                            </div>
+                            <div class="mock-colorbar" id="mock-colorbar"></div>
+                        </div>
+                    </div>
+                    <p class="screen4-hint">💡 Check in op het moment zelf. Geen retrospectief.</p>
+                </div>
+
+                <!-- Screen 5: Score System -->
+                <div class="onboarding-screen" data-screen="5">
+                    <h2 class="screen5-title">Zo werkt het: elke check-in is een punt</h2>
+                    <div class="score-demo">
+                        <div class="score-card-demo">
+                            <div class="demo-score-display">
+                                <span class="demo-good" id="demo-good">0</span>
+                                <span class="demo-vs">vs</span>
+                                <span class="demo-bad" id="demo-bad">0</span>
+                            </div>
+                            <div class="demo-balance" id="demo-balance">+0</div>
+                        </div>
+                        <div class="color-bar-demo">
+                            <div class="color-bar-fill" id="demo-colorbar-fill"></div>
+                            <div class="color-bar-labels">
+                                <span class="label-bad">Slecht</span>
+                                <span class="label-good">Goed</span>
+                            </div>
+                        </div>
+                        <div class="mini-calendar-demo">
+                            <div class="mini-day" data-day="Ma" style="--day-color: #ef4444;"><span>Ma</span><span class="mini-balance">-4</span></div>
+                            <div class="mini-day" data-day="Di" style="--day-color: #f59e0b;"><span>Di</span><span class="mini-balance">-1</span></div>
+                            <div class="mini-day" data-day="Wo" style="--day-color: #eab308;"><span>Wo</span><span class="mini-balance">+1</span></div>
+                            <div class="mini-day" data-day="Do" style="--day-color: #84cc16;"><span>Do</span><span class="mini-balance">+8</span></div>
+                            <div class="mini-day" data-day="Vr" style="--day-color: #22c55e;"><span>Vr</span><span class="mini-balance">+12</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Screen 6: Mini Demo -->
+                <div class="onboarding-screen" data-screen="6">
+                    <h2 class="screen6-title">Probeer het zelf</h2>
+                    <div class="demo-card">
+                        <div class="demo-question">Doe je het goed?</div>
+                        <div class="demo-score-live">
+                            <span class="demo-live-good" id="demo-live-good">0</span>
+                            <span class="demo-live-vs">vs</span>
+                            <span class="demo-live-bad" id="demo-live-bad">0</span>
+                        </div>
+                        <div class="demo-buttons">
+                            <button class="demo-btn demo-yes-btn" id="demo-yes-btn">
+                                <span class="demo-btn-icon">✓</span>
+                                <span class="demo-btn-text">Ja!</span>
+                            </button>
+                            <button class="demo-btn demo-no-btn" id="demo-no-btn">
+                                <span class="demo-btn-icon">✕</span>
+                                <span class="demo-btn-text">Nee</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="demo-success hidden" id="demo-success">
+                        <p>Je snapt het! 💪</p>
+                        <button class="demo-verder-btn" id="demo-verder-btn">Verder</button>
+                    </div>
+                </div>
+
+                <!-- Screen 7: Setup -->
+                <div class="onboarding-screen" data-screen="7">
+                    <div class="screen7-header">
+                        <h2 class="screen7-title">Battle time!</h2>
+                        <p class="screen7-subtitle">Voor welke verandering ga jij?</p>
+                    </div>
+                    <div class="setup-card">
+                        <div class="setup-field">
+                            <label for="onboard-habit-name">Gewoonte Naam</label>
+                            <input type="text" id="onboard-habit-name" placeholder="bijv. Goede houding">
+                        </div>
+                        <div class="setup-field">
+                            <label for="onboard-habit-question">Check-in Vraag</label>
+                            <input type="text" id="onboard-habit-question" placeholder="bijv. Zit je rechtop?">
+                        </div>
+                        <div class="setup-field">
+                            <label>Cooldown Periode</label>
+                            <div class="setup-cooldown-options">
+                                <button class="setup-cooldown-btn active" data-minutes="5">5 min</button>
+                                <button class="setup-cooldown-btn" data-minutes="10">10 min</button>
+                                <button class="setup-cooldown-btn" data-minutes="15">15 min</button>
+                                <button class="setup-cooldown-btn" data-minutes="30">30 min</button>
+                            </div>
+                        </div>
+                        <button id="onboard-start-btn" class="onboard-start-btn" disabled>
+                            <span>⚔️</span> Start je Battle
+                        </button>
+                        <button id="onboard-presets-btn" class="onboard-presets-btn">
+                            📋 Of kies uit presets
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Battles Overview Screen -->
         <div id="overview-screen" class="screen">
             <header class="app-header">
@@ -369,7 +545,7 @@
 
                 <div class="settings-section">
                     <p style="text-align: center; color: #666; font-size: 12px; margin-top: 16px;">
-                        Daily Battle v1.6
+                        Daily Battle v1.7
                     </p>
                 </div>
             </div>
