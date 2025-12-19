@@ -932,6 +932,33 @@ function initSettings() {
             }
         }
     });
+
+    // Show onboarding button (for testing/review)
+    const showOnboardingBtn = document.getElementById('show-onboarding-btn');
+    if (showOnboardingBtn) {
+        showOnboardingBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+            // Reset onboarding state
+            onboardingState.currentScreen = 1;
+            onboardingState.demoGood = 0;
+            onboardingState.demoBad = 0;
+            onboardingState.demoClicks = 0;
+            onboardingState.screen5Animated = false;
+            // Reset demo display
+            const demoLiveGood = document.getElementById('demo-live-good');
+            const demoLiveBad = document.getElementById('demo-live-bad');
+            const demoSuccess = document.getElementById('demo-success');
+            if (demoLiveGood) demoLiveGood.textContent = '0';
+            if (demoLiveBad) demoLiveBad.textContent = '0';
+            if (demoSuccess) {
+                demoSuccess.classList.add('hidden');
+                demoSuccess.classList.remove('show');
+            }
+            // Show onboarding
+            showOnboarding();
+            goToScreen(1);
+        });
+    }
 }
 
 // PWA Install
@@ -1593,7 +1620,7 @@ const SPEECH_BUBBLE_DATA = [
     { text: "Rechtop zitten", color: "orange", delay: 0.6 },
     { text: "Minder snacken", color: "red", delay: 0.9 },
     { text: "Niet uitstellen", color: "blue", delay: 1.2 },
-    { text: "Bewuster ademen", color: "purple", delay: 1.5 }
+    { text: "Bewuster ademen", color: "pink", delay: 1.5 }
 ];
 
 let onboardingState = {
