@@ -790,6 +790,8 @@ function handleTabSwitch(tabName) {
     document.getElementById('stats-tab').classList.toggle('hidden', tabName !== 'stats');
 
     if (tabName === 'stats') {
+        // Reset calendar to current month when switching to stats
+        calendarMonth = new Date();
         updateStatsUI();
     }
 }
@@ -846,6 +848,28 @@ function initSetup() {
     });
 }
 
+// Focus management for modals
+let lastFocusedElement = null;
+
+function openModal(modal) {
+    lastFocusedElement = document.activeElement;
+    modal.classList.remove('hidden');
+    // Focus first focusable element
+    const focusable = modal.querySelector('input, button, [tabindex]:not([tabindex="-1"])');
+    if (focusable) {
+        setTimeout(() => focusable.focus(), 100);
+    }
+}
+
+function closeModal(modal) {
+    modal.classList.add('hidden');
+    // Return focus to last focused element
+    if (lastFocusedElement) {
+        lastFocusedElement.focus();
+        lastFocusedElement = null;
+    }
+}
+
 // Settings
 function initSettings() {
     const settingsBtn = document.getElementById('settings-btn');
@@ -880,19 +904,26 @@ function initSettings() {
             btn.classList.toggle('active', parseInt(btn.dataset.minutes) === settingsCooldown);
         });
 
-        modal.classList.remove('hidden');
+        openModal(modal);
     }
 
     settingsBtn.addEventListener('click', openSettings);
     overviewSettingsBtn.addEventListener('click', openSettings);
 
     closeBtn.addEventListener('click', () => {
-        modal.classList.add('hidden');
+        closeModal(modal);
     });
 
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
-            modal.classList.add('hidden');
+            closeModal(modal);
+        }
+    });
+
+    // Escape key to close
+    modal.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeModal(modal);
         }
     });
 
@@ -915,12 +946,23 @@ function initSettings() {
         const question = document.getElementById('settings-question').value.trim();
 
         if (name && question) {
+            const oldCooldownMinutes = battle.habit.cooldownMinutes;
+
             battle.habit.name = name;
             battle.habit.question = question;
             battle.habit.cooldownMinutes = settingsCooldown;
+
+            // If cooldown changed and there's an active timer, recalculate end time
+            if (oldCooldownMinutes !== settingsCooldown && battle.cooldownEnd) {
+                const oldEndTime = new Date(battle.cooldownEnd);
+                const oldStartTime = new Date(oldEndTime.getTime() - oldCooldownMinutes * 60 * 1000);
+                // Calculate new end time based on original start time
+                battle.cooldownEnd = new Date(oldStartTime.getTime() + settingsCooldown * 60 * 1000).toISOString();
+            }
+
             saveState();
             updateMainUI();
-            modal.classList.add('hidden');
+            closeModal(modal);
         }
     });
 
@@ -946,18 +988,34 @@ function initSettings() {
 
                 // Support both old and new format
                 if (imported.battles) {
+                    // Validate imported battles
+                    const validBattles = imported.battles
+                        .map(validateBattle)
+                        .filter(Boolean);
+
+                    if (validBattles.length === 0) {
+                        alert('Geen geldige battles gevonden in bestand');
+                        return;
+                    }
+
                     state = {
-                        battles: imported.battles,
+                        battles: validBattles,
                         currentBattleId: null
                     };
                 } else if (imported.habit) {
-                    // Old single-battle format
-                    const oldBattle = {
+                    // Old single-battle format - validate it
+                    const oldBattle = validateBattle({
                         id: generateId(),
                         habit: imported.habit,
                         history: imported.history || {},
                         cooldownEnd: imported.cooldownEnd || null
-                    };
+                    });
+
+                    if (!oldBattle) {
+                        alert('Ongeldig bestandsformaat');
+                        return;
+                    }
+
                     state.battles.push(oldBattle);
                 } else {
                     alert('Ongeldig bestandsformaat');
@@ -965,7 +1023,7 @@ function initSettings() {
                 }
 
                 saveState();
-                modal.classList.add('hidden');
+                closeModal(modal);
                 showOverview();
                 alert('Data succesvol geïmporteerd!');
             } catch (err) {
@@ -984,7 +1042,7 @@ function initSettings() {
             state.battles = state.battles.filter(b => b.id !== battle.id);
             state.currentBattleId = null;
             saveState();
-            modal.classList.add('hidden');
+            closeModal(modal);
             showOverview();
         }
     });
@@ -1155,7 +1213,7 @@ function initPresets() {
                 document.getElementById('habit-name').value = item.dataset.name;
                 document.getElementById('habit-question').value = item.dataset.question;
                 document.getElementById('start-battle-btn').disabled = false;
-                presetsModal.classList.add('hidden');
+                closeModal(presetsModal);
             });
         });
     }
@@ -1163,21 +1221,38 @@ function initPresets() {
     showPresetsBtn.addEventListener('click', () => {
         searchInput.value = '';
         renderPresets();
-        presetsModal.classList.remove('hidden');
+        openModal(presetsModal);
     });
 
     closePresetsBtn.addEventListener('click', () => {
-        presetsModal.classList.add('hidden');
+        closeModal(presetsModal);
     });
 
     presetsModal.addEventListener('click', (e) => {
         if (e.target === presetsModal) {
-            presetsModal.classList.add('hidden');
+            closeModal(presetsModal);
+        }
+    });
+
+    // Escape key to close
+    presetsModal.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeModal(presetsModal);
         }
     });
 
     searchInput.addEventListener('input', () => {
         renderPresets(searchInput.value);
+    });
+
+    // Enter key selects first result
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const firstItem = presetsList.querySelector('.preset-item');
+            if (firstItem) {
+                firstItem.click();
+            }
+        }
     });
 }
 
@@ -1350,9 +1425,16 @@ function startNotificationScheduler() {
 function updateSliderLabel() {
     const slider = document.getElementById('notification-slider');
     const label = document.getElementById('slider-value');
+    const randomHint = document.getElementById('random-hint');
     if (slider && label) {
         const option = INTERVAL_OPTIONS[slider.value];
         label.textContent = option.label;
+
+        // Update random timing hint with current interval
+        if (randomHint) {
+            const periodText = option.label.replace('Elke ', '').replace('Elk ', '').replace('1x per ', '');
+            randomHint.textContent = `Notificatie komt op een willekeurig moment binnen elke ${periodText}`;
+        }
     }
 }
 
@@ -1470,16 +1552,23 @@ function initTheme() {
 
     themeBtn.addEventListener('click', () => {
         updateThemeSelection();
-        themeModal.classList.remove('hidden');
+        openModal(themeModal);
     });
 
     closeTheme.addEventListener('click', () => {
-        themeModal.classList.add('hidden');
+        closeModal(themeModal);
     });
 
     themeModal.addEventListener('click', (e) => {
         if (e.target === themeModal) {
-            themeModal.classList.add('hidden');
+            closeModal(themeModal);
+        }
+    });
+
+    // Escape key to close
+    themeModal.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeModal(themeModal);
         }
     });
 
@@ -1518,16 +1607,23 @@ function initCalendarOverview() {
     calendarBtn.addEventListener('click', () => {
         calendarOverviewMonth = new Date();
         updateCalendarOverview();
-        calendarModal.classList.remove('hidden');
+        openModal(calendarModal);
     });
 
     closeCalendar.addEventListener('click', () => {
-        calendarModal.classList.add('hidden');
+        closeModal(calendarModal);
     });
 
     calendarModal.addEventListener('click', (e) => {
         if (e.target === calendarModal) {
-            calendarModal.classList.add('hidden');
+            closeModal(calendarModal);
+        }
+    });
+
+    // Escape key to close
+    calendarModal.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeModal(calendarModal);
         }
     });
 
@@ -1711,7 +1807,7 @@ const SPEECH_BUBBLE_DATA = [
 
 let onboardingState = {
     currentScreen: 1,
-    totalScreens: 4,
+    totalScreens: 9,
     touchStartX: 0,
     touchEndX: 0,
     isDragging: false,
@@ -1719,7 +1815,8 @@ let onboardingState = {
     demoBad: 0,
     demoClicks: 0,
     swipeHintShown: false,
-    listenersAttached: false
+    listenersAttached: false,
+    screen2RotationInterval: null
 };
 
 // Check if onboarding should be shown
@@ -1738,8 +1835,9 @@ function completeOnboarding() {
 function initOnboarding() {
     // Always setup event listeners so they work when onboarding is reopened
     setupOnboardingEventListeners();
-    initScreen2Demo();
-    initScreen4Form();
+    initScreen2SpeechBubbles();
+    initScreen6Demo();
+    initScreen8Form();
 
     if (!shouldShowOnboarding()) {
         hideOnboarding();
@@ -2021,13 +2119,17 @@ function updateSkipButton() {
 }
 
 function triggerScreenAnimations(screenNumber) {
-    // No special animations needed for simplified onboarding
+    // Clean up screen 2 rotation interval when leaving screen 2
+    if (screenNumber !== 2 && onboardingState.screen2RotationInterval) {
+        clearInterval(onboardingState.screen2RotationInterval);
+        onboardingState.screen2RotationInterval = null;
+    }
 }
 
 // Skip onboarding
 function handleSkipOnboarding() {
-    // Go to screen 3 (setup form)
-    goToScreen(3);
+    // Go to screen 8 (setup form)
+    goToScreen(8);
 }
 
 // Screen 1: Floating examples
@@ -2222,8 +2324,8 @@ function animateScreen5() {
     });
 }
 
-// Screen 2: Interactive demo
-function initScreen2Demo() {
+// Screen 6: Interactive demo
+function initScreen6Demo() {
     const yesBtn = document.getElementById('demo-yes-btn');
     const noBtn = document.getElementById('demo-no-btn');
 
@@ -2264,8 +2366,8 @@ function handleDemoClick(isGood) {
     }
 }
 
-// Screen 3-4: Setup form
-function initScreen4Form() {
+// Screen 8-9: Setup form
+function initScreen8Form() {
     const nameInput = document.getElementById('onboard-habit-name');
     const questionInput = document.getElementById('onboard-habit-question');
     const startBtn = document.getElementById('onboard-start-btn');
@@ -2384,7 +2486,7 @@ function renderPresetsForOnboarding() {
             if (nameInput) nameInput.value = item.dataset.name;
             if (questionInput) questionInput.value = item.dataset.question;
             if (startBtn) startBtn.disabled = false;
-            if (presetsModal) presetsModal.classList.add('hidden');
+            if (presetsModal) closeModal(presetsModal);
         });
     });
 }
