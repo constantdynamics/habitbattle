@@ -1633,7 +1633,8 @@ let onboardingState = {
     demoBad: 0,
     demoClicks: 0,
     screen5Animated: false,
-    swipeHintShown: false
+    swipeHintShown: false,
+    listenersAttached: false
 };
 
 // Check if onboarding should be shown
@@ -1650,17 +1651,19 @@ function completeOnboarding() {
 
 // Initialize onboarding
 function initOnboarding() {
+    // Always setup event listeners so they work when onboarding is reopened
+    setupOnboardingEventListeners();
+    initScreen1FloatingExamples();
+    initScreen2SpeechBubbles();
+    initScreen6Demo();
+    initScreen8Form();
+
     if (!shouldShowOnboarding()) {
         hideOnboarding();
         return;
     }
 
     showOnboarding();
-    setupOnboardingEventListeners();
-    initScreen1FloatingExamples();
-    initScreen2SpeechBubbles();
-    initScreen6Demo();
-    initScreen7Form();
 }
 
 function showOnboarding() {
@@ -1681,6 +1684,9 @@ function hideOnboarding() {
 
 // Setup all event listeners for onboarding
 function setupOnboardingEventListeners() {
+    // Prevent adding listeners multiple times
+    if (onboardingState.listenersAttached) return;
+
     const screensContainer = document.getElementById('onboarding-screens');
     const skipBtn = document.getElementById('onboarding-skip');
     const progressDots = document.querySelectorAll('.progress-dot');
@@ -1688,6 +1694,8 @@ function setupOnboardingEventListeners() {
     const nextBtn = document.getElementById('onboarding-next');
 
     if (!screensContainer) return;
+
+    onboardingState.listenersAttached = true;
 
     // Touch events for swipe
     screensContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
@@ -1754,8 +1762,8 @@ function handleTouchStart(e) {
 function handleTouchMove(e) {
     if (!onboardingState.isDragging) return;
 
-    // Don't capture touch on screen 6 demo buttons or screen 7 form
-    if (onboardingState.currentScreen === 6 || onboardingState.currentScreen === 7) {
+    // Don't capture touch on screen 6 demo buttons or screen 8 form
+    if (onboardingState.currentScreen === 6 || onboardingState.currentScreen === 8) {
         const target = e.target;
         if (target.closest('.demo-card') || target.closest('.setup-card')) {
             return;
@@ -2065,16 +2073,11 @@ function animateScreen5() {
 function initScreen6Demo() {
     const yesBtn = document.getElementById('demo-yes-btn');
     const noBtn = document.getElementById('demo-no-btn');
-    const verderBtn = document.getElementById('demo-verder-btn');
 
     if (!yesBtn || !noBtn) return;
 
     yesBtn.addEventListener('click', () => handleDemoClick(true));
     noBtn.addEventListener('click', () => handleDemoClick(false));
-
-    if (verderBtn) {
-        verderBtn.addEventListener('click', () => goToScreen(7));
-    }
 }
 
 function handleDemoClick(isGood) {
@@ -2108,8 +2111,8 @@ function handleDemoClick(isGood) {
     }
 }
 
-// Screen 7: Setup form
-function initScreen7Form() {
+// Screen 8: Setup form
+function initScreen8Form() {
     const nameInput = document.getElementById('onboard-habit-name');
     const questionInput = document.getElementById('onboard-habit-question');
     const startBtn = document.getElementById('onboard-start-btn');
