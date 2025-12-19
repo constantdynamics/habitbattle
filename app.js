@@ -1567,29 +1567,19 @@ function init() {
 
     const hasData = loadState();
 
-    // Check if onboarding should be shown
-    if (shouldShowOnboarding()) {
-        initOnboarding();
-        // Still initialize other components
-        initSetup();
-        initEventListeners();
-        initPresets();
-        initNotifications();
-        initSort();
-        initTheme();
-        initCalendarOverview();
-        return;
+    // Always initialize onboarding (sets up event listeners, hides if not needed)
+    initOnboarding();
+
+    // Show appropriate screen if onboarding is not active
+    if (!shouldShowOnboarding()) {
+        if (hasData && state.battles.length > 0) {
+            showOverview();
+        } else {
+            showSetup();
+        }
     }
 
-    // Hide onboarding if not needed
-    hideOnboarding();
-
-    if (hasData && state.battles.length > 0) {
-        showOverview();
-    } else {
-        showSetup();
-    }
-
+    // Initialize all other components
     initSetup();
     initEventListeners();
     initPresets();
