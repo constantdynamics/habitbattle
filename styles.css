@@ -275,7 +275,12 @@ html, body {
     border: none;
     font-size: 24px;
     cursor: pointer;
-    padding: 4px;
+    padding: 10px;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Tab Content */
@@ -2545,13 +2550,22 @@ html, body {
     }
 }
 
-/* ===== Screen 6: Mini Demo ===== */
+/* ===== Screen 2: Mini Demo ===== */
 .screen6-title {
     font-size: 24px;
     font-weight: 700;
     color: var(--text-primary);
     text-align: center;
-    margin-bottom: 32px;
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 10;
+}
+
+.demo-intro {
+    font-size: 16px;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 24px;
     position: relative;
     z-index: 10;
 }

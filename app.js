@@ -99,6 +99,16 @@ const INTERVAL_OPTIONS = [
 
 let notificationInterval = null;
 let nextNotificationTime = null;
+let notificationDebounceTimer = null;
+
+// Debounce helper
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
 
 // State
 let state = {
@@ -186,12 +196,17 @@ function calculateStreak(battle) {
     const todayBalance = calculateBalance(todayData.good, todayData.bad);
     const todayHasData = todayData.good + todayData.bad > 0;
 
-    if (todayHasData && todayBalance > 0) {
-        streak = 1;
-    } else if (todayHasData && todayBalance <= 0) {
+    // If today has data with negative balance, streak is broken
+    if (todayHasData && todayBalance <= 0) {
         return 0;
     }
 
+    // If today has positive data, count it
+    if (todayHasData && todayBalance > 0) {
+        streak = 1;
+    }
+
+    // Check previous days
     const checkDate = new Date(today);
     checkDate.setDate(checkDate.getDate() - 1);
 
@@ -200,9 +215,17 @@ function calculateStreak(battle) {
         const dayData = getDayData(battle, dateKey);
         const hasData = dayData.good + dayData.bad > 0;
 
-        if (!hasData) break;
+        // Skip days without data (don't break streak)
+        if (!hasData) {
+            // But don't go back more than 7 days without data
+            const daysSinceToday = Math.floor((today - checkDate) / (1000 * 60 * 60 * 24));
+            if (daysSinceToday > 7) break;
+            checkDate.setDate(checkDate.getDate() - 1);
+            continue;
+        }
 
         const balance = calculateBalance(dayData.good, dayData.bad);
+        // Negative balance breaks streak
         if (balance <= 0) break;
 
         streak++;
@@ -234,6 +257,27 @@ function saveState() {
     }
 }
 
+function validateBattle(battle) {
+    // Validate battle structure
+    if (!battle || typeof battle !== 'object') return null;
+    if (!battle.id || typeof battle.id !== 'string') return null;
+    if (!battle.habit || typeof battle.habit !== 'object') return null;
+    if (!battle.habit.name || typeof battle.habit.name !== 'string') return null;
+    if (!battle.habit.question || typeof battle.habit.question !== 'string') return null;
+
+    // Return sanitized battle
+    return {
+        id: battle.id,
+        habit: {
+            name: battle.habit.name,
+            question: battle.habit.question,
+            cooldownMinutes: typeof battle.habit.cooldownMinutes === 'number' ? battle.habit.cooldownMinutes : 5
+        },
+        history: battle.history && typeof battle.history === 'object' ? battle.history : {},
+        cooldownEnd: typeof battle.cooldownEnd === 'number' ? battle.cooldownEnd : null
+    };
+}
+
 function loadState() {
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -242,28 +286,43 @@ function loadState() {
 
             // Migration from old single-battle format
             if (parsed.habit && !parsed.battles) {
-                const oldBattle = {
+                const oldBattle = validateBattle({
                     id: generateId(),
                     habit: parsed.habit,
                     history: parsed.history || {},
                     cooldownEnd: parsed.cooldownEnd || null
-                };
-                state = {
-                    battles: [oldBattle],
-                    currentBattleId: null
-                };
-                saveState();
-                return true;
+                });
+                if (oldBattle) {
+                    state = {
+                        battles: [oldBattle],
+                        currentBattleId: null
+                    };
+                    saveState();
+                    return true;
+                }
             }
 
+            // Validate and filter battles
+            const validBattles = (parsed.battles || [])
+                .map(validateBattle)
+                .filter(Boolean);
+
             state = {
-                battles: parsed.battles || [],
+                battles: validBattles,
                 currentBattleId: parsed.currentBattleId || null
             };
-            return true;
+
+            // Verify currentBattleId exists
+            if (state.currentBattleId && !state.battles.find(b => b.id === state.currentBattleId)) {
+                state.currentBattleId = null;
+            }
+
+            return validBattles.length > 0;
         }
     } catch (e) {
         console.error('Failed to load state:', e);
+        // Reset to clean state on error
+        state = { battles: [], currentBattleId: null };
     }
     return false;
 }
@@ -305,6 +364,12 @@ function showSetup(isNewBattle = false) {
 }
 
 function showBattle(battleId) {
+    // Clear any existing cooldown timer before switching battles
+    if (cooldownInterval) {
+        clearInterval(cooldownInterval);
+        cooldownInterval = null;
+    }
+
     state.currentBattleId = battleId;
     showScreen('main-app');
 
@@ -1272,7 +1337,14 @@ function scheduleNextNotification() {
 }
 
 function startNotificationScheduler() {
-    scheduleNextNotification();
+    // Debounce to prevent multiple rapid restarts
+    if (notificationDebounceTimer) {
+        clearTimeout(notificationDebounceTimer);
+    }
+    notificationDebounceTimer = setTimeout(() => {
+        scheduleNextNotification();
+        notificationDebounceTimer = null;
+    }, 300);
 }
 
 function updateSliderLabel() {
@@ -1639,17 +1711,15 @@ const SPEECH_BUBBLE_DATA = [
 
 let onboardingState = {
     currentScreen: 1,
-    totalScreens: 9,
+    totalScreens: 4,
     touchStartX: 0,
     touchEndX: 0,
     isDragging: false,
     demoGood: 0,
     demoBad: 0,
     demoClicks: 0,
-    screen5Animated: false,
     swipeHintShown: false,
-    listenersAttached: false,
-    screen2RotationInterval: null
+    listenersAttached: false
 };
 
 // Check if onboarding should be shown
@@ -1668,10 +1738,8 @@ function completeOnboarding() {
 function initOnboarding() {
     // Always setup event listeners so they work when onboarding is reopened
     setupOnboardingEventListeners();
-    initScreen1FloatingExamples();
-    initScreen2SpeechBubbles();
-    initScreen6Demo();
-    initScreen8Form();
+    initScreen2Demo();
+    initScreen4Form();
 
     if (!shouldShowOnboarding()) {
         hideOnboarding();
@@ -1777,8 +1845,8 @@ function handleTouchStart(e) {
 function handleTouchMove(e) {
     if (!onboardingState.isDragging) return;
 
-    // Don't capture touch on screen 6 demo buttons or screen 8 form
-    if (onboardingState.currentScreen === 6 || onboardingState.currentScreen === 8) {
+    // Don't capture touch on demo buttons or setup form
+    if (onboardingState.currentScreen === 2 || onboardingState.currentScreen === 3 || onboardingState.currentScreen === 4) {
         const target = e.target;
         if (target.closest('.demo-card') || target.closest('.setup-card')) {
             return;
@@ -1945,28 +2013,21 @@ function updateProgressDots() {
 function updateSkipButton() {
     const skipBtn = document.getElementById('onboarding-skip');
     if (skipBtn) {
-        // Hide skip button on last two screens (form screens)
-        const hideOnScreens = onboardingState.currentScreen >= 8;
+        // Hide skip button on setup screens (3 and 4)
+        const hideOnScreens = onboardingState.currentScreen >= 3;
         skipBtn.style.opacity = hideOnScreens ? '0' : '1';
         skipBtn.style.pointerEvents = hideOnScreens ? 'none' : 'auto';
     }
 }
 
 function triggerScreenAnimations(screenNumber) {
-    switch (screenNumber) {
-        case 5:
-            if (!onboardingState.screen5Animated) {
-                animateScreen5();
-                onboardingState.screen5Animated = true;
-            }
-            break;
-    }
+    // No special animations needed for simplified onboarding
 }
 
 // Skip onboarding
 function handleSkipOnboarding() {
-    // Go to screen 8 (setup)
-    goToScreen(8);
+    // Go to screen 3 (setup form)
+    goToScreen(3);
 }
 
 // Screen 1: Floating examples
@@ -2161,8 +2222,8 @@ function animateScreen5() {
     });
 }
 
-// Screen 6: Interactive demo
-function initScreen6Demo() {
+// Screen 2: Interactive demo
+function initScreen2Demo() {
     const yesBtn = document.getElementById('demo-yes-btn');
     const noBtn = document.getElementById('demo-no-btn');
 
@@ -2203,8 +2264,8 @@ function handleDemoClick(isGood) {
     }
 }
 
-// Screen 8: Setup form
-function initScreen8Form() {
+// Screen 3-4: Setup form
+function initScreen4Form() {
     const nameInput = document.getElementById('onboard-habit-name');
     const questionInput = document.getElementById('onboard-habit-question');
     const startBtn = document.getElementById('onboard-start-btn');
