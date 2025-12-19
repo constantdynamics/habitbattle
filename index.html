@@ -34,6 +34,7 @@
                 <span class="progress-dot" data-screen="6"></span>
                 <span class="progress-dot" data-screen="7"></span>
                 <span class="progress-dot" data-screen="8"></span>
+                <span class="progress-dot" data-screen="9"></span>
             </div>
 
             <!-- Skip Button -->
@@ -91,9 +92,31 @@
                 <div class="onboarding-screen" data-screen="4">
                     <div class="onboarding-shapes shape-layer-4"></div>
                     <div class="screen4-content">
+                        <p class="screen4-intro">Habit Battle helpt je</p>
                         <div class="screen4-title">
                             <span>van <span class="color-red">vergeten</span> naar <span class="color-yellow">merken</span></span>
                             <span>van <span class="color-yellow">merken</span> naar <span class="color-green">veranderen</span></span>
+                        </div>
+                        <div class="competence-quadrant">
+                            <div class="quadrant-grid">
+                                <div class="quadrant-cell q-red">
+                                    <span class="q-label">onbewust</span>
+                                    <span class="q-sublabel">onbekwaam</span>
+                                </div>
+                                <div class="quadrant-cell q-orange">
+                                    <span class="q-label">bewust</span>
+                                    <span class="q-sublabel">onbekwaam</span>
+                                </div>
+                                <div class="quadrant-cell q-yellow">
+                                    <span class="q-label">bewust</span>
+                                    <span class="q-sublabel">bekwaam</span>
+                                </div>
+                                <div class="quadrant-cell q-green">
+                                    <span class="q-label">onbewust</span>
+                                    <span class="q-sublabel">bekwaam</span>
+                                </div>
+                            </div>
+                            <div class="quadrant-arrow"></div>
                         </div>
                     </div>
                 </div>
@@ -170,7 +193,7 @@
                     </div>
                 </div>
 
-                <!-- Screen 8: Setup Form -->
+                <!-- Screen 8: Setup Form - Name and Question -->
                 <div class="onboarding-screen" data-screen="8">
                     <div class="onboarding-shapes shape-layer-8"></div>
                     <div class="screen8-header">
@@ -186,8 +209,20 @@
                             <label for="onboard-habit-question">check-in vraag</label>
                             <input type="text" id="onboard-habit-question" placeholder="bijv. Zit je rechtop?">
                         </div>
+                        <button id="onboard-presets-btn" class="onboard-presets-btn">
+                            📋 Of kies uit presets
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Screen 9: Cooldown and Start -->
+                <div class="onboarding-screen" data-screen="9">
+                    <div class="onboarding-shapes shape-layer-9"></div>
+                    <div class="screen9-header">
+                        <h2 class="screen9-title">Cooldown instellen</h2>
+                    </div>
+                    <div class="setup-card">
                         <div class="setup-field">
-                            <label>cooldown periode</label>
                             <p class="cooldown-explanation">Na elke check-in wacht je even voordat je opnieuw kunt antwoorden. Dit voorkomt dat je te vaak checkt en helpt je om bewuster te worden.</p>
                             <div class="setup-cooldown-options">
                                 <button class="setup-cooldown-btn active" data-minutes="5">5 min</button>
@@ -198,9 +233,6 @@
                         </div>
                         <button id="onboard-start-btn" class="onboard-start-btn" disabled>
                             <span>⚔️</span> Start je battle
-                        </button>
-                        <button id="onboard-presets-btn" class="onboard-presets-btn">
-                            📋 Of kies uit presets
                         </button>
                     </div>
                 </div>

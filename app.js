@@ -1605,17 +1605,41 @@ const ONBOARDING_EXAMPLES = [
 ];
 
 const SPEECH_BUBBLE_DATA = [
-    { text: "Niet meer nagelbijten", color: "purple", delay: 0 },
-    { text: "Minder telefoon checken", color: "green", delay: 0.3 },
-    { text: "Rechtop zitten", color: "orange", delay: 0.6 },
-    { text: "Minder snacken", color: "red", delay: 0.9 },
-    { text: "Niet uitstellen", color: "blue", delay: 1.2 },
-    { text: "Bewuster ademen", color: "pink", delay: 1.5 }
+    { text: "Niet meer nagelbijten", color: "purple" },
+    { text: "Minder telefoon checken", color: "green" },
+    { text: "Rechtop zitten", color: "orange" },
+    { text: "Minder snacken", color: "red" },
+    { text: "Niet uitstellen", color: "blue" },
+    { text: "Bewuster ademen", color: "pink" },
+    { text: "Minder social media", color: "purple" },
+    { text: "Vroeger naar bed", color: "green" },
+    { text: "Meer water drinken", color: "blue" },
+    { text: "Niet piekeren", color: "orange" },
+    { text: "Rustiger eten", color: "red" },
+    { text: "Minder koffie", color: "pink" },
+    { text: "Vaker pauze nemen", color: "purple" },
+    { text: "Niet onderbreken", color: "green" },
+    { text: "Beter luisteren", color: "blue" },
+    { text: "Positiever denken", color: "orange" },
+    { text: "Minder klagen", color: "red" },
+    { text: "Op tijd stoppen", color: "pink" },
+    { text: "Gezonder eten", color: "green" },
+    { text: "Meer bewegen", color: "blue" },
+    { text: "Minder scrollen", color: "purple" },
+    { text: "Beter plannen", color: "orange" },
+    { text: "Niet multitasken", color: "red" },
+    { text: "Dankbaarder zijn", color: "pink" },
+    { text: "Minder vergelijken", color: "green" },
+    { text: "Grenzen stellen", color: "blue" },
+    { text: "Nee durven zeggen", color: "purple" },
+    { text: "Minder haasten", color: "orange" },
+    { text: "Geduld oefenen", color: "red" },
+    { text: "Mindful zijn", color: "pink" }
 ];
 
 let onboardingState = {
     currentScreen: 1,
-    totalScreens: 8,
+    totalScreens: 9,
     touchStartX: 0,
     touchEndX: 0,
     isDragging: false,
@@ -1624,7 +1648,8 @@ let onboardingState = {
     demoClicks: 0,
     screen5Animated: false,
     swipeHintShown: false,
-    listenersAttached: false
+    listenersAttached: false,
+    screen2RotationInterval: null
 };
 
 // Check if onboarding should be shown
@@ -1920,9 +1945,10 @@ function updateProgressDots() {
 function updateSkipButton() {
     const skipBtn = document.getElementById('onboarding-skip');
     if (skipBtn) {
-        // Hide skip button on last screen
-        skipBtn.style.opacity = onboardingState.currentScreen === 8 ? '0' : '1';
-        skipBtn.style.pointerEvents = onboardingState.currentScreen === 8 ? 'none' : 'auto';
+        // Hide skip button on last two screens (form screens)
+        const hideOnScreens = onboardingState.currentScreen >= 8;
+        skipBtn.style.opacity = hideOnScreens ? '0' : '1';
+        skipBtn.style.pointerEvents = hideOnScreens ? 'none' : 'auto';
     }
 }
 
@@ -1967,7 +1993,7 @@ function initScreen1FloatingExamples() {
     });
 }
 
-// Screen 2: Speech bubbles
+// Screen 2: Speech bubbles with rotation
 function initScreen2SpeechBubbles() {
     const container = document.getElementById('speech-bubbles');
     if (!container) return;
@@ -1975,40 +2001,116 @@ function initScreen2SpeechBubbles() {
     // Clear any existing bubbles
     container.innerHTML = '';
 
-    // Predefined positions for bubbles (percentage based)
-    const positions = [
-        { top: '5%', left: '10%' },
-        { top: '15%', right: '5%' },
-        { top: '35%', left: '5%' },
-        { top: '45%', right: '10%' },
-        { top: '65%', left: '15%' },
-        { top: '75%', right: '8%' }
+    // Check if desktop (more than 768px)
+    const isDesktop = window.innerWidth > 768;
+    const visibleCount = isDesktop ? 8 : 5;
+
+    // Positions for bubbles - more for desktop
+    const mobilePositions = [
+        { top: '8%', left: '8%' },
+        { top: '20%', right: '5%' },
+        { top: '40%', left: '5%' },
+        { top: '55%', right: '8%' },
+        { top: '75%', left: '12%' }
     ];
 
-    SPEECH_BUBBLE_DATA.forEach((data, index) => {
-        const bubble = document.createElement('div');
-        bubble.className = `speech-bubble speech-bubble-${data.color}`;
-        bubble.innerHTML = `<span class="speech-text">${data.text}</span>`;
+    const desktopPositions = [
+        { top: '5%', left: '8%' },
+        { top: '5%', right: '10%' },
+        { top: '25%', left: '3%' },
+        { top: '25%', right: '5%' },
+        { top: '45%', left: '8%' },
+        { top: '45%', right: '3%' },
+        { top: '65%', left: '5%' },
+        { top: '70%', right: '10%' }
+    ];
 
-        // Apply position
-        const pos = positions[index] || positions[0];
+    const positions = isDesktop ? desktopPositions : mobilePositions;
+
+    // Shuffle array helper
+    function shuffleArray(arr) {
+        const shuffled = [...arr];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+
+    // Create bubble elements
+    const bubbles = [];
+    for (let i = 0; i < visibleCount; i++) {
+        const bubble = document.createElement('div');
+        bubble.className = 'speech-bubble';
+        bubble.innerHTML = '<span class="speech-text"></span>';
+
+        const pos = positions[i];
         if (pos.top) bubble.style.top = pos.top;
         if (pos.left) bubble.style.left = pos.left;
         if (pos.right) bubble.style.right = pos.right;
 
-        // Start visible with animation delay
         bubble.style.opacity = '0';
         bubble.style.transform = 'scale(0.8)';
 
         container.appendChild(bubble);
+        bubbles.push(bubble);
+    }
 
-        // Animate in with delay
+    // Track which examples are shown
+    let availableExamples = shuffleArray(SPEECH_BUBBLE_DATA);
+    let currentIndex = 0;
+
+    // Update a single bubble with new content
+    function updateBubble(bubble, data) {
+        bubble.style.transition = 'opacity 0.4s ease-out, transform 0.4s ease-out';
+        bubble.style.opacity = '0';
+        bubble.style.transform = 'scale(0.8)';
+
         setTimeout(() => {
+            // Update content and color
+            bubble.className = `speech-bubble speech-bubble-${data.color}`;
+            bubble.querySelector('.speech-text').textContent = data.text;
+
+            // Fade in
             bubble.style.transition = 'opacity 0.5s ease-out, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
             bubble.style.opacity = '1';
             bubble.style.transform = 'scale(1)';
-        }, data.delay * 1000 + 100);
+        }, 400);
+    }
+
+    // Get next example
+    function getNextExample() {
+        if (currentIndex >= availableExamples.length) {
+            availableExamples = shuffleArray(SPEECH_BUBBLE_DATA);
+            currentIndex = 0;
+        }
+        return availableExamples[currentIndex++];
+    }
+
+    // Initial display with staggered animation
+    bubbles.forEach((bubble, index) => {
+        setTimeout(() => {
+            const data = getNextExample();
+            bubble.className = `speech-bubble speech-bubble-${data.color}`;
+            bubble.querySelector('.speech-text').textContent = data.text;
+            bubble.style.transition = 'opacity 0.5s ease-out, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            bubble.style.opacity = '1';
+            bubble.style.transform = 'scale(1)';
+        }, index * 200 + 100);
     });
+
+    // Clear any existing rotation interval
+    if (onboardingState.screen2RotationInterval) {
+        clearInterval(onboardingState.screen2RotationInterval);
+    }
+
+    // Start rotation - replace one random bubble every 2.5 seconds
+    onboardingState.screen2RotationInterval = setInterval(() => {
+        const randomBubbleIndex = Math.floor(Math.random() * bubbles.length);
+        const bubble = bubbles[randomBubbleIndex];
+        const data = getNextExample();
+        updateBubble(bubble, data);
+    }, 2500);
 }
 
 // Screen 5: Animated score demo
