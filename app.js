@@ -1625,7 +1625,7 @@ const SPEECH_BUBBLE_DATA = [
 
 let onboardingState = {
     currentScreen: 1,
-    totalScreens: 7,
+    totalScreens: 8,
     touchStartX: 0,
     touchEndX: 0,
     isDragging: false,
@@ -1684,6 +1684,8 @@ function setupOnboardingEventListeners() {
     const screensContainer = document.getElementById('onboarding-screens');
     const skipBtn = document.getElementById('onboarding-skip');
     const progressDots = document.querySelectorAll('.progress-dot');
+    const prevBtn = document.getElementById('onboarding-prev');
+    const nextBtn = document.getElementById('onboarding-next');
 
     if (!screensContainer) return;
 
@@ -1703,11 +1705,34 @@ function setupOnboardingEventListeners() {
         skipBtn.addEventListener('click', handleSkipOnboarding);
     }
 
+    // Navigation arrows
+    if (prevBtn) {
+        prevBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (onboardingState.currentScreen > 1) {
+                goToScreen(onboardingState.currentScreen - 1);
+            }
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (onboardingState.currentScreen < onboardingState.totalScreens) {
+                goToScreen(onboardingState.currentScreen + 1);
+            }
+        });
+    }
+
     // Progress dots click
     progressDots.forEach(dot => {
-        dot.addEventListener('click', () => {
+        dot.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             const screen = parseInt(dot.dataset.screen);
-            if (screen && screen <= onboardingState.currentScreen + 1) {
+            if (screen) {
                 goToScreen(screen);
             }
         });
@@ -1856,11 +1881,28 @@ function goToScreen(screenNumber) {
     // Update progress dots
     updateProgressDots();
 
+    // Update navigation arrows
+    updateNavigationArrows();
+
     // Update skip button visibility
     updateSkipButton();
 
     // Trigger screen-specific animations
     triggerScreenAnimations(screenNumber);
+}
+
+// Update navigation arrows visibility
+function updateNavigationArrows() {
+    const prevBtn = document.getElementById('onboarding-prev');
+    const nextBtn = document.getElementById('onboarding-next');
+
+    if (prevBtn) {
+        prevBtn.style.display = onboardingState.currentScreen > 1 ? 'flex' : 'none';
+    }
+
+    if (nextBtn) {
+        nextBtn.style.display = onboardingState.currentScreen < onboardingState.totalScreens ? 'flex' : 'none';
+    }
 }
 
 function updateProgressDots() {
@@ -1881,8 +1923,8 @@ function updateSkipButton() {
     const skipBtn = document.getElementById('onboarding-skip');
     if (skipBtn) {
         // Hide skip button on last screen
-        skipBtn.style.opacity = onboardingState.currentScreen === 7 ? '0' : '1';
-        skipBtn.style.pointerEvents = onboardingState.currentScreen === 7 ? 'none' : 'auto';
+        skipBtn.style.opacity = onboardingState.currentScreen === 8 ? '0' : '1';
+        skipBtn.style.pointerEvents = onboardingState.currentScreen === 8 ? 'none' : 'auto';
     }
 }
 
@@ -1899,8 +1941,8 @@ function triggerScreenAnimations(screenNumber) {
 
 // Skip onboarding
 function handleSkipOnboarding() {
-    // Go to screen 7 (setup)
-    goToScreen(7);
+    // Go to screen 8 (setup)
+    goToScreen(8);
 }
 
 // Screen 1: Floating examples
@@ -1932,13 +1974,42 @@ function initScreen2SpeechBubbles() {
     const container = document.getElementById('speech-bubbles');
     if (!container) return;
 
+    // Clear any existing bubbles
+    container.innerHTML = '';
+
+    // Predefined positions for bubbles (percentage based)
+    const positions = [
+        { top: '5%', left: '10%' },
+        { top: '15%', right: '5%' },
+        { top: '35%', left: '5%' },
+        { top: '45%', right: '10%' },
+        { top: '65%', left: '15%' },
+        { top: '75%', right: '8%' }
+    ];
+
     SPEECH_BUBBLE_DATA.forEach((data, index) => {
         const bubble = document.createElement('div');
         bubble.className = `speech-bubble speech-bubble-${data.color}`;
         bubble.innerHTML = `<span class="speech-text">${data.text}</span>`;
-        bubble.style.animationDelay = `${data.delay}s`;
+
+        // Apply position
+        const pos = positions[index] || positions[0];
+        if (pos.top) bubble.style.top = pos.top;
+        if (pos.left) bubble.style.left = pos.left;
+        if (pos.right) bubble.style.right = pos.right;
+
+        // Start visible with animation delay
+        bubble.style.opacity = '0';
+        bubble.style.transform = 'scale(0.8)';
 
         container.appendChild(bubble);
+
+        // Animate in with delay
+        setTimeout(() => {
+            bubble.style.transition = 'opacity 0.5s ease-out, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            bubble.style.opacity = '1';
+            bubble.style.transform = 'scale(1)';
+        }, data.delay * 1000 + 100);
     });
 }
 

@@ -16,6 +16,14 @@
     <div id="app">
         <!-- Onboarding Screen -->
         <div id="onboarding" class="onboarding">
+            <!-- Navigation Arrows -->
+            <button class="onboarding-nav-arrow onboarding-nav-prev" id="onboarding-prev" style="display: none;">
+                <span>‹</span>
+            </button>
+            <button class="onboarding-nav-arrow onboarding-nav-next" id="onboarding-next">
+                <span>›</span>
+            </button>
+
             <!-- Progress Dots -->
             <div class="onboarding-progress">
                 <span class="progress-dot active" data-screen="1"></span>
@@ -25,6 +33,7 @@
                 <span class="progress-dot" data-screen="5"></span>
                 <span class="progress-dot" data-screen="6"></span>
                 <span class="progress-dot" data-screen="7"></span>
+                <span class="progress-dot" data-screen="8"></span>
             </div>
 
             <!-- Skip Button -->
@@ -38,8 +47,8 @@
                     <div class="onboarding-shapes shape-layer-1"></div>
                     <div class="screen1-content">
                         <p class="screen1-pretitle">Herken je dit?</p>
-                        <h1 class="screen1-title">Die ene gewoonte die maar niet lukt...</h1>
-                        <p class="screen1-subtitle">Je weet precies wat je anders wil doen en hoe je dat anders moet doen.<br><br>En toch val je steeds terug in het oude patroon.</p>
+                        <h1 class="screen1-title">Die ene gewoonte<br>die maar niet lukt...</h1>
+                        <p class="screen1-subtitle">Je weet precies wat je anders wil doen<br>en hoe je dat anders moet doen.<br><br>En toch val je steeds terug in het oude patroon.</p>
                     </div>
                     <div class="floating-examples" id="floating-examples-1">
                         <!-- Filled by JS -->
@@ -81,74 +90,37 @@
                 <!-- Screen 4: The Solution -->
                 <div class="onboarding-screen" data-screen="4">
                     <div class="onboarding-shapes shape-layer-4"></div>
-                    <h2 class="screen4-intro">HabitBattle helpt je met de overstap:</h2>
-                    <div class="screen4-title">
-                        <span>Van <span class="color-red">vergeten</span> naar <span class="color-yellow">merken</span>.</span>
-                        <span>Van <span class="color-yellow">merken</span> naar <span class="color-green">veranderen</span>.</span>
+                    <div class="screen4-content">
+                        <div class="screen4-title">
+                            <span>van <span class="color-red">vergeten</span> naar <span class="color-yellow">merken</span></span>
+                            <span>van <span class="color-yellow">merken</span> naar <span class="color-green">veranderen</span></span>
+                        </div>
                     </div>
+                </div>
+
+                <!-- Screen 5: Phone Preview -->
+                <div class="onboarding-screen" data-screen="5">
+                    <div class="onboarding-shapes shape-layer-5"></div>
+                    <h2 class="screen5-title">Zo ziet het eruit</h2>
                     <div class="phone-mockup phone-mockup-straight">
                         <div class="phone-screen">
-                            <div class="mock-question" id="mock-question">Zit je rechtop?</div>
+                            <div class="mock-question">Zit je rechtop?</div>
                             <div class="mock-score">
-                                <span class="mock-good" id="mock-good">0</span>
+                                <span class="mock-good">3</span>
                                 <span class="mock-vs">vs</span>
-                                <span class="mock-bad" id="mock-bad">0</span>
+                                <span class="mock-bad">1</span>
                             </div>
                             <div class="mock-buttons">
                                 <div class="mock-btn mock-yes">✓</div>
                                 <div class="mock-btn mock-no">✕</div>
                             </div>
-                            <div class="mock-colorbar" id="mock-colorbar"></div>
+                            <div class="mock-colorbar"></div>
                         </div>
                     </div>
+                    <p class="screen5-hint">Beantwoord de vraag met ja of nee</p>
                 </div>
 
-                <!-- Screen 5: Score System -->
-                <div class="onboarding-screen" data-screen="5">
-                    <div class="onboarding-shapes shape-layer-5"></div>
-                    <h2 class="screen5-title">Zo werkt het</h2>
-                    <div class="steps-container">
-                        <div class="step-card">
-                            <div class="step-number">1</div>
-                            <div class="step-content">
-                                <h3 class="step-title">Check in bij jezelf</h3>
-                                <p class="step-description">Vul ja of nee in op het moment zelf</p>
-                                <div class="step-visual step-visual-buttons">
-                                    <div class="mini-btn mini-yes">✓</div>
-                                    <div class="mini-btn mini-no">✕</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="step-card">
-                            <div class="step-number">2</div>
-                            <div class="step-content">
-                                <h3 class="step-title">Je score verandert</h3>
-                                <p class="step-description">Hoe groener, hoe beter je het doet</p>
-                                <div class="step-visual step-visual-colorbar">
-                                    <div class="mini-colorbar">
-                                        <div class="mini-colorbar-fill" style="width: 70%;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="step-card">
-                            <div class="step-number">3</div>
-                            <div class="step-content">
-                                <h3 class="step-title">Zie je voortgang</h3>
-                                <p class="step-description">Bekijk hoe je score per dag verandert</p>
-                                <div class="step-visual step-visual-calendar">
-                                    <div class="mini-day-small" style="background: #ef4444;">Ma</div>
-                                    <div class="mini-day-small" style="background: #f59e0b;">Di</div>
-                                    <div class="mini-day-small" style="background: #eab308;">Wo</div>
-                                    <div class="mini-day-small" style="background: #84cc16;">Do</div>
-                                    <div class="mini-day-small" style="background: #22c55e;">Vr</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Screen 6: Mini Demo -->
+                <!-- Screen 6: Interactive Demo -->
                 <div class="onboarding-screen" data-screen="6">
                     <div class="onboarding-shapes shape-layer-6"></div>
                     <h2 class="screen6-title">Probeer het zelf</h2>
@@ -172,28 +144,51 @@
                     </div>
                     <div class="demo-success hidden" id="demo-success">
                         <p>Je snapt het! 💪</p>
-                        <button class="demo-verder-btn" id="demo-verder-btn">Verder</button>
                     </div>
                 </div>
 
-                <!-- Screen 7: Setup -->
+                <!-- Screen 7: Calendar/Progress -->
                 <div class="onboarding-screen" data-screen="7">
                     <div class="onboarding-shapes shape-layer-7"></div>
-                    <div class="screen7-header">
-                        <h2 class="screen7-title">Battle time!</h2>
-                        <p class="screen7-subtitle">Voor welke verandering ga jij?</p>
+                    <h2 class="screen7-title">Volg je voortgang</h2>
+                    <p class="screen7-subtitle">Zie hoe je score per dag verandert</p>
+                    <div class="progress-demo">
+                        <div class="week-demo">
+                            <div class="week-demo-day" style="background: #ef4444;"><span>Ma</span><span>-2</span></div>
+                            <div class="week-demo-day" style="background: #f59e0b;"><span>Di</span><span>0</span></div>
+                            <div class="week-demo-day" style="background: #eab308;"><span>Wo</span><span>+1</span></div>
+                            <div class="week-demo-day" style="background: #84cc16;"><span>Do</span><span>+3</span></div>
+                            <div class="week-demo-day" style="background: #22c55e;"><span>Vr</span><span>+5</span></div>
+                            <div class="week-demo-day" style="background: #16a34a;"><span>Za</span><span>+7</span></div>
+                            <div class="week-demo-day today" style="background: #15803d;"><span>Zo</span><span>+8</span></div>
+                        </div>
+                        <div class="streak-demo">
+                            <span class="streak-demo-fire">🔥</span>
+                            <span class="streak-demo-count">7</span>
+                            <span class="streak-demo-label">dagen streak</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Screen 8: Setup Form -->
+                <div class="onboarding-screen" data-screen="8">
+                    <div class="onboarding-shapes shape-layer-8"></div>
+                    <div class="screen8-header">
+                        <h2 class="screen8-title">Start je battle</h2>
+                        <p class="screen8-subtitle">Voor welke verandering ga jij?</p>
                     </div>
                     <div class="setup-card">
                         <div class="setup-field">
-                            <label for="onboard-habit-name">Naam van de gewoonte</label>
+                            <label for="onboard-habit-name">naam van de gewoonte</label>
                             <input type="text" id="onboard-habit-name" placeholder="bijv. Goede houding">
                         </div>
                         <div class="setup-field">
-                            <label for="onboard-habit-question">Check-in vraag</label>
+                            <label for="onboard-habit-question">check-in vraag</label>
                             <input type="text" id="onboard-habit-question" placeholder="bijv. Zit je rechtop?">
                         </div>
                         <div class="setup-field">
-                            <label>Cooldown periode</label>
+                            <label>cooldown periode</label>
+                            <p class="cooldown-explanation">Na elke check-in wacht je even voordat je opnieuw kunt antwoorden. Dit voorkomt dat je te vaak checkt en helpt je om bewuster te worden.</p>
                             <div class="setup-cooldown-options">
                                 <button class="setup-cooldown-btn active" data-minutes="5">5 min</button>
                                 <button class="setup-cooldown-btn" data-minutes="10">10 min</button>
@@ -574,7 +569,7 @@
 
                 <div class="settings-section">
                     <p style="text-align: center; color: #666; font-size: 12px; margin-top: 16px;">
-                        Daily Battle v1.8
+                        Daily Battle v1.9
                     </p>
                 </div>
             </div>
