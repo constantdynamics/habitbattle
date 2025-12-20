@@ -731,6 +731,14 @@ function recordEntry(isGood) {
 
     saveState();
     updateMainUI();
+
+    // Check if this is the first action and pauzetijd is not configured
+    if (!battle.pauzetijdConfigured) {
+        // Show pauzetijd modal after a short delay
+        setTimeout(() => {
+            showPauzetijdModal(battle);
+        }, 1500);
+    }
 }
 
 // Battle Burst Animation
@@ -801,15 +809,83 @@ function handleCalendarNav(direction) {
     updateCalendar();
 }
 
+// Pauzetijd Modal
+function showPauzetijdModal(battle) {
+    const modal = document.getElementById('pauzetijd-modal');
+    const slider = document.getElementById('pauzetijd-slider');
+    const valueDisplay = document.getElementById('pauzetijd-value');
+    const saveBtn = document.getElementById('pauzetijd-save-btn');
+
+    if (!modal || !slider || !saveBtn) return;
+
+    // Set initial value
+    slider.value = battle.habit.cooldownMinutes || 10;
+    updatePauzetijdValue(slider.value, valueDisplay);
+
+    // Update display on slider change
+    slider.oninput = () => {
+        updatePauzetijdValue(slider.value, valueDisplay);
+    };
+
+    // Save button
+    saveBtn.onclick = () => {
+        battle.habit.cooldownMinutes = parseInt(slider.value);
+        battle.pauzetijdConfigured = true;
+
+        // Recalculate current cooldown if active
+        if (battle.cooldownEnd) {
+            const now = Date.now();
+            const elapsed = now - (battle.cooldownEnd - (10 * 60 * 1000)); // Approximate start time
+            battle.cooldownEnd = now + (battle.habit.cooldownMinutes * 60 * 1000) - elapsed;
+            if (battle.cooldownEnd < now) {
+                battle.cooldownEnd = null;
+            }
+        }
+
+        saveState();
+        updateMainUI();
+        closeModal(modal);
+    };
+
+    openModal(modal);
+}
+
+function updatePauzetijdValue(value, displayEl) {
+    if (displayEl) {
+        displayEl.textContent = value == 1 ? '1 minuut' : `${value} minuten`;
+    }
+}
+
+function initPauzetijdModal() {
+    const modal = document.getElementById('pauzetijd-modal');
+    const slider = document.getElementById('pauzetijd-slider');
+    const valueDisplay = document.getElementById('pauzetijd-value');
+
+    if (slider && valueDisplay) {
+        slider.addEventListener('input', () => {
+            updatePauzetijdValue(slider.value, valueDisplay);
+        });
+    }
+
+    // Close on background click
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                // Don't close on background click for this modal
+                // User must click save
+            }
+        });
+    }
+}
+
 // Setup Flow
 function initSetup() {
     const nameInput = document.getElementById('habit-name');
     const questionInput = document.getElementById('habit-question');
     const startBtn = document.getElementById('start-battle-btn');
     const cancelBtn = document.getElementById('cancel-setup-btn');
-    const cooldownBtns = document.querySelectorAll('#setup-screen .cooldown-btn');
-
-    let selectedCooldown = 5;
+    const pauzetijdSlider = document.getElementById('setup-pauzetijd-slider');
+    const pauzetijdValue = document.getElementById('setup-pauzetijd-value');
 
     function validateForm() {
         startBtn.disabled = !nameInput.value.trim() || !questionInput.value.trim();
@@ -818,24 +894,26 @@ function initSetup() {
     nameInput.addEventListener('input', validateForm);
     questionInput.addEventListener('input', validateForm);
 
-    cooldownBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            cooldownBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            selectedCooldown = parseInt(btn.dataset.minutes);
+    // Pauzetijd slider
+    if (pauzetijdSlider && pauzetijdValue) {
+        pauzetijdSlider.addEventListener('input', () => {
+            updatePauzetijdValue(pauzetijdSlider.value, pauzetijdValue);
         });
-    });
+    }
 
     startBtn.addEventListener('click', () => {
+        const pauzetijd = pauzetijdSlider ? parseInt(pauzetijdSlider.value) : 10;
+
         const newBattle = {
             id: generateId(),
             habit: {
                 name: nameInput.value.trim(),
                 question: questionInput.value.trim(),
-                cooldownMinutes: selectedCooldown
+                cooldownMinutes: pauzetijd
             },
             history: {},
-            cooldownEnd: null
+            cooldownEnd: null,
+            pauzetijdConfigured: true
         };
 
         state.battles.push(newBattle);
@@ -881,9 +959,8 @@ function initSettings() {
     const importInput = document.getElementById('import-data');
     const deleteBtn = document.getElementById('delete-battle');
     const clearBtn = document.getElementById('clear-data');
-    const cooldownBtns = document.querySelectorAll('#settings-cooldown .cooldown-btn');
-
-    let settingsCooldown = 5;
+    const pauzetijdSlider = document.getElementById('settings-pauzetijd-slider');
+    const pauzetijdValue = document.getElementById('settings-pauzetijd-value');
 
     function openSettings() {
         const battle = getCurrentBattle();
@@ -891,18 +968,25 @@ function initSettings() {
         if (battle) {
             document.getElementById('settings-name').value = battle.habit.name;
             document.getElementById('settings-question').value = battle.habit.question;
-            settingsCooldown = battle.habit.cooldownMinutes;
+
+            // Set pauzetijd slider
+            if (pauzetijdSlider && pauzetijdValue) {
+                pauzetijdSlider.value = battle.habit.cooldownMinutes || 10;
+                updatePauzetijdValue(pauzetijdSlider.value, pauzetijdValue);
+            }
+
             deleteBtn.style.display = 'flex';
         } else {
             document.getElementById('settings-name').value = '';
             document.getElementById('settings-question').value = '';
-            settingsCooldown = 5;
+
+            if (pauzetijdSlider && pauzetijdValue) {
+                pauzetijdSlider.value = 10;
+                updatePauzetijdValue(10, pauzetijdValue);
+            }
+
             deleteBtn.style.display = 'none';
         }
-
-        cooldownBtns.forEach(btn => {
-            btn.classList.toggle('active', parseInt(btn.dataset.minutes) === settingsCooldown);
-        });
 
         openModal(modal);
     }
@@ -927,13 +1011,12 @@ function initSettings() {
         }
     });
 
-    cooldownBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            cooldownBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            settingsCooldown = parseInt(btn.dataset.minutes);
+    // Pauzetijd slider
+    if (pauzetijdSlider && pauzetijdValue) {
+        pauzetijdSlider.addEventListener('input', () => {
+            updatePauzetijdValue(pauzetijdSlider.value, pauzetijdValue);
         });
-    });
+    }
 
     saveBtn.addEventListener('click', () => {
         const battle = getCurrentBattle();
@@ -944,20 +1027,21 @@ function initSettings() {
 
         const name = document.getElementById('settings-name').value.trim();
         const question = document.getElementById('settings-question').value.trim();
+        const newPauzetijd = pauzetijdSlider ? parseInt(pauzetijdSlider.value) : 10;
 
         if (name && question) {
             const oldCooldownMinutes = battle.habit.cooldownMinutes;
 
             battle.habit.name = name;
             battle.habit.question = question;
-            battle.habit.cooldownMinutes = settingsCooldown;
+            battle.habit.cooldownMinutes = newPauzetijd;
 
-            // If cooldown changed and there's an active timer, recalculate end time
-            if (oldCooldownMinutes !== settingsCooldown && battle.cooldownEnd) {
+            // If pauzetijd changed and there's an active timer, recalculate end time
+            if (oldCooldownMinutes !== newPauzetijd && battle.cooldownEnd) {
                 const oldEndTime = new Date(battle.cooldownEnd);
                 const oldStartTime = new Date(oldEndTime.getTime() - oldCooldownMinutes * 60 * 1000);
                 // Calculate new end time based on original start time
-                battle.cooldownEnd = new Date(oldStartTime.getTime() + settingsCooldown * 60 * 1000).toISOString();
+                battle.cooldownEnd = new Date(oldStartTime.getTime() + newPauzetijd * 60 * 1000).toISOString();
             }
 
             saveState();
@@ -1755,6 +1839,7 @@ function init() {
     initSort();
     initTheme();
     initCalendarOverview();
+    initPauzetijdModal();
 }
 
 // ============================================
@@ -1772,51 +1857,98 @@ const ONBOARDING_EXAMPLES = [
     "Ongezond snacken"
 ];
 
-const SPEECH_BUBBLE_DATA = [
-    { text: "Niet meer nagelbijten", color: "purple" },
-    { text: "Minder telefoon checken", color: "green" },
-    { text: "Rechtop zitten", color: "orange" },
-    { text: "Minder snacken", color: "red" },
-    { text: "Niet uitstellen", color: "blue" },
-    { text: "Bewuster ademen", color: "pink" },
-    { text: "Minder social media", color: "purple" },
-    { text: "Vroeger naar bed", color: "green" },
-    { text: "Meer water drinken", color: "blue" },
-    { text: "Niet piekeren", color: "orange" },
-    { text: "Rustiger eten", color: "red" },
+// Diverse floating examples for screen 2 - extremely varied categories
+const FLOATING_EXAMPLES = [
+    // Houding & Lichaam
+    { text: "Rechtop zitten", color: "purple" },
+    { text: "Schouders ontspannen", color: "blue" },
+    { text: "Niet voorover leunen", color: "green" },
+    { text: "Benen niet kruisen", color: "teal" },
+
+    // Digitaal gedrag
+    { text: "Minder telefoon", color: "orange" },
+    { text: "Geen social media", color: "pink" },
+    { text: "E-mail beperken", color: "red" },
+    { text: "Niet endless scrollen", color: "purple" },
+    { text: "Notificaties negeren", color: "blue" },
+
+    // Eten & Drinken
+    { text: "Meer water drinken", color: "teal" },
+    { text: "Minder snacken", color: "green" },
+    { text: "Rustiger eten", color: "orange" },
     { text: "Minder koffie", color: "pink" },
-    { text: "Vaker pauze nemen", color: "purple" },
-    { text: "Niet onderbreken", color: "green" },
-    { text: "Beter luisteren", color: "blue" },
-    { text: "Positiever denken", color: "orange" },
-    { text: "Minder klagen", color: "red" },
-    { text: "Op tijd stoppen", color: "pink" },
-    { text: "Gezonder eten", color: "green" },
-    { text: "Meer bewegen", color: "blue" },
-    { text: "Minder scrollen", color: "purple" },
-    { text: "Beter plannen", color: "orange" },
-    { text: "Niet multitasken", color: "red" },
-    { text: "Dankbaarder zijn", color: "pink" },
-    { text: "Minder vergelijken", color: "green" },
-    { text: "Grenzen stellen", color: "blue" },
-    { text: "Nee durven zeggen", color: "purple" },
-    { text: "Minder haasten", color: "orange" },
-    { text: "Geduld oefenen", color: "red" },
-    { text: "Mindful zijn", color: "pink" }
+    { text: "Geen suiker", color: "red" },
+    { text: "Gezonder kiezen", color: "yellow" },
+
+    // Mentaal & Emotie
+    { text: "Niet piekeren", color: "purple" },
+    { text: "Positief blijven", color: "blue" },
+    { text: "Niet klagen", color: "green" },
+    { text: "Dankbaar zijn", color: "teal" },
+    { text: "Minder vergelijken", color: "orange" },
+    { text: "Niet oordelen", color: "pink" },
+
+    // Productiviteit
+    { text: "Niet uitstellen", color: "red" },
+    { text: "Focus houden", color: "purple" },
+    { text: "Niet multitasken", color: "blue" },
+    { text: "Taken afmaken", color: "green" },
+    { text: "Beter plannen", color: "yellow" },
+
+    // Communicatie
+    { text: "Beter luisteren", color: "teal" },
+    { text: "Niet onderbreken", color: "orange" },
+    { text: "Duidelijker praten", color: "pink" },
+    { text: "Nee zeggen", color: "red" },
+    { text: "Grenzen stellen", color: "purple" },
+
+    // Gewoontes stoppen
+    { text: "Nagels niet bijten", color: "blue" },
+    { text: "Niet vloeken", color: "green" },
+    { text: "Minder roken", color: "orange" },
+    { text: "Niet friemelen", color: "pink" },
+    { text: "Haar niet trekken", color: "red" },
+
+    // Beweging & Activiteit
+    { text: "Meer stappen", color: "teal" },
+    { text: "Vaker opstaan", color: "purple" },
+    { text: "Traplopen", color: "blue" },
+    { text: "Stretchen", color: "green" },
+    { text: "Buiten wandelen", color: "yellow" },
+
+    // Slaap & Rust
+    { text: "Vroeger naar bed", color: "orange" },
+    { text: "Pauzes nemen", color: "pink" },
+    { text: "Niet overwerken", color: "red" },
+    { text: "Relaxen", color: "purple" },
+
+    // Mindfulness
+    { text: "Bewust ademen", color: "teal" },
+    { text: "In het moment zijn", color: "blue" },
+    { text: "Rustig blijven", color: "green" },
+    { text: "Geduld hebben", color: "yellow" },
+
+    // Financieel
+    { text: "Minder kopen", color: "orange" },
+    { text: "Budget volgen", color: "pink" },
+    { text: "Impulsen weerstaan", color: "red" },
+
+    // Relaties
+    { text: "Aandacht geven", color: "purple" },
+    { text: "Vaker bellen", color: "teal" },
+    { text: "Complimenten geven", color: "blue" },
+    { text: "Geduldig zijn", color: "green" }
 ];
 
 let onboardingState = {
     currentScreen: 1,
-    totalScreens: 9,
+    totalScreens: 6,
     touchStartX: 0,
     touchEndX: 0,
     isDragging: false,
-    demoGood: 0,
-    demoBad: 0,
-    demoClicks: 0,
     swipeHintShown: false,
     listenersAttached: false,
-    screen2RotationInterval: null
+    floatingBubblesInitialized: false
 };
 
 // Check if onboarding should be shown
@@ -1835,9 +1967,8 @@ function completeOnboarding() {
 function initOnboarding() {
     // Always setup event listeners so they work when onboarding is reopened
     setupOnboardingEventListeners();
-    initScreen2SpeechBubbles();
-    initScreen6Demo();
-    initScreen8Form();
+    initScreen2FloatingBubbles();
+    initScreen6Form();
 
     if (!shouldShowOnboarding()) {
         hideOnboarding();
@@ -2128,8 +2259,8 @@ function triggerScreenAnimations(screenNumber) {
 
 // Skip onboarding
 function handleSkipOnboarding() {
-    // Go to screen 8 (setup form)
-    goToScreen(8);
+    // Go to screen 6 (setup form)
+    goToScreen(6);
 }
 
 // Screen 1: Floating examples
@@ -2156,39 +2287,14 @@ function initScreen1FloatingExamples() {
     });
 }
 
-// Screen 2: Speech bubbles with rotation
-function initScreen2SpeechBubbles() {
-    const container = document.getElementById('speech-bubbles');
+// Screen 2: Floating bubbles from top to bottom
+function initScreen2FloatingBubbles() {
+    if (onboardingState.floatingBubblesInitialized) return;
+
+    const container = document.getElementById('floating-examples');
     if (!container) return;
 
-    // Clear any existing bubbles
-    container.innerHTML = '';
-
-    // Check if desktop (more than 768px)
-    const isDesktop = window.innerWidth > 768;
-    const visibleCount = isDesktop ? 8 : 5;
-
-    // Positions for bubbles - more for desktop
-    const mobilePositions = [
-        { top: '8%', left: '8%' },
-        { top: '20%', right: '5%' },
-        { top: '40%', left: '5%' },
-        { top: '55%', right: '8%' },
-        { top: '75%', left: '12%' }
-    ];
-
-    const desktopPositions = [
-        { top: '5%', left: '8%' },
-        { top: '5%', right: '10%' },
-        { top: '25%', left: '3%' },
-        { top: '25%', right: '5%' },
-        { top: '45%', left: '8%' },
-        { top: '45%', right: '3%' },
-        { top: '65%', left: '5%' },
-        { top: '70%', right: '10%' }
-    ];
-
-    const positions = isDesktop ? desktopPositions : mobilePositions;
+    onboardingState.floatingBubblesInitialized = true;
 
     // Shuffle array helper
     function shuffleArray(arr) {
@@ -2200,80 +2306,50 @@ function initScreen2SpeechBubbles() {
         return shuffled;
     }
 
-    // Create bubble elements
-    const bubbles = [];
-    for (let i = 0; i < visibleCount; i++) {
-        const bubble = document.createElement('div');
-        bubble.className = 'speech-bubble';
-        bubble.innerHTML = '<span class="speech-text"></span>';
-
-        const pos = positions[i];
-        if (pos.top) bubble.style.top = pos.top;
-        if (pos.left) bubble.style.left = pos.left;
-        if (pos.right) bubble.style.right = pos.right;
-
-        bubble.style.opacity = '0';
-        bubble.style.transform = 'scale(0.8)';
-
-        container.appendChild(bubble);
-        bubbles.push(bubble);
-    }
-
-    // Track which examples are shown
-    let availableExamples = shuffleArray(SPEECH_BUBBLE_DATA);
+    const shuffledExamples = shuffleArray(FLOATING_EXAMPLES);
     let currentIndex = 0;
 
-    // Update a single bubble with new content
-    function updateBubble(bubble, data) {
-        bubble.style.transition = 'opacity 0.4s ease-out, transform 0.4s ease-out';
-        bubble.style.opacity = '0';
-        bubble.style.transform = 'scale(0.8)';
+    // Create a floating bubble
+    function createFloatingBubble() {
+        const example = shuffledExamples[currentIndex % shuffledExamples.length];
+        currentIndex++;
 
+        const bubble = document.createElement('div');
+        bubble.className = `floating-bubble color-${example.color}`;
+        bubble.textContent = example.text;
+
+        // Random horizontal position (5% to 85% to avoid edges)
+        const leftPos = 5 + Math.random() * 80;
+        bubble.style.left = `${leftPos}%`;
+
+        // Random animation duration (10-16 seconds)
+        const duration = 10 + Math.random() * 6;
+        bubble.style.animationDuration = `${duration}s`;
+
+        // Random delay for initial stagger
+        const delay = Math.random() * 2;
+        bubble.style.animationDelay = `${delay}s`;
+
+        container.appendChild(bubble);
+
+        // Remove after animation completes
         setTimeout(() => {
-            // Update content and color
-            bubble.className = `speech-bubble speech-bubble-${data.color}`;
-            bubble.querySelector('.speech-text').textContent = data.text;
-
-            // Fade in
-            bubble.style.transition = 'opacity 0.5s ease-out, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
-            bubble.style.opacity = '1';
-            bubble.style.transform = 'scale(1)';
-        }, 400);
+            bubble.remove();
+        }, (duration + delay) * 1000);
     }
 
-    // Get next example
-    function getNextExample() {
-        if (currentIndex >= availableExamples.length) {
-            availableExamples = shuffleArray(SPEECH_BUBBLE_DATA);
-            currentIndex = 0;
-        }
-        return availableExamples[currentIndex++];
+    // Create initial batch of bubbles
+    const isDesktop = window.innerWidth > 768;
+    const initialCount = isDesktop ? 12 : 8;
+
+    for (let i = 0; i < initialCount; i++) {
+        setTimeout(() => createFloatingBubble(), i * 400);
     }
 
-    // Initial display with staggered animation
-    bubbles.forEach((bubble, index) => {
-        setTimeout(() => {
-            const data = getNextExample();
-            bubble.className = `speech-bubble speech-bubble-${data.color}`;
-            bubble.querySelector('.speech-text').textContent = data.text;
-            bubble.style.transition = 'opacity 0.5s ease-out, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
-            bubble.style.opacity = '1';
-            bubble.style.transform = 'scale(1)';
-        }, index * 200 + 100);
-    });
-
-    // Clear any existing rotation interval
-    if (onboardingState.screen2RotationInterval) {
-        clearInterval(onboardingState.screen2RotationInterval);
-    }
-
-    // Start rotation - replace one random bubble every 2.5 seconds
-    onboardingState.screen2RotationInterval = setInterval(() => {
-        const randomBubbleIndex = Math.floor(Math.random() * bubbles.length);
-        const bubble = bubbles[randomBubbleIndex];
-        const data = getNextExample();
-        updateBubble(bubble, data);
-    }, 2500);
+    // Continuously create new bubbles
+    setInterval(() => {
+        createFloatingBubble();
+    }, 1500);
 }
 
 // Screen 5: Animated score demo
@@ -2324,57 +2400,12 @@ function animateScreen5() {
     });
 }
 
-// Screen 6: Interactive demo
-function initScreen6Demo() {
-    const yesBtn = document.getElementById('demo-yes-btn');
-    const noBtn = document.getElementById('demo-no-btn');
-
-    if (!yesBtn || !noBtn) return;
-
-    yesBtn.addEventListener('click', () => handleDemoClick(true));
-    noBtn.addEventListener('click', () => handleDemoClick(false));
-}
-
-function handleDemoClick(isGood) {
-    const goodEl = document.getElementById('demo-live-good');
-    const badEl = document.getElementById('demo-live-bad');
-    const successEl = document.getElementById('demo-success');
-
-    if (!goodEl || !badEl) return;
-
-    if (isGood) {
-        onboardingState.demoGood++;
-        goodEl.textContent = onboardingState.demoGood;
-        goodEl.classList.add('pop');
-        setTimeout(() => goodEl.classList.remove('pop'), 200);
-    } else {
-        onboardingState.demoBad++;
-        badEl.textContent = onboardingState.demoBad;
-        badEl.classList.add('pop');
-        setTimeout(() => badEl.classList.remove('pop'), 200);
-    }
-
-    onboardingState.demoClicks++;
-
-    // Vibrate
-    vibrate(isGood ? 50 : [50, 50, 50]);
-
-    // Show success message after 3 clicks
-    if (onboardingState.demoClicks >= 3 && successEl) {
-        successEl.classList.remove('hidden');
-        successEl.classList.add('show');
-    }
-}
-
-// Screen 8-9: Setup form
-function initScreen8Form() {
+// Screen 6: Setup form with presets and green button
+function initScreen6Form() {
     const nameInput = document.getElementById('onboard-habit-name');
     const questionInput = document.getElementById('onboard-habit-question');
     const startBtn = document.getElementById('onboard-start-btn');
     const presetsBtn = document.getElementById('onboard-presets-btn');
-    const cooldownBtns = document.querySelectorAll('.setup-cooldown-btn');
-
-    let selectedCooldown = 5;
 
     function validateForm() {
         if (startBtn) {
@@ -2390,28 +2421,21 @@ function initScreen8Form() {
         questionInput.addEventListener('input', validateForm);
     }
 
-    cooldownBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            cooldownBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            selectedCooldown = parseInt(btn.dataset.minutes);
-        });
-    });
-
     if (startBtn) {
         startBtn.addEventListener('click', () => {
             if (!nameInput?.value.trim() || !questionInput?.value.trim()) return;
 
-            // Create the battle
+            // Create the battle with default 10 min pauzetijd
             const newBattle = {
                 id: generateId(),
                 habit: {
                     name: nameInput.value.trim(),
                     question: questionInput.value.trim(),
-                    cooldownMinutes: selectedCooldown
+                    cooldownMinutes: 10 // Default, will be set after first action
                 },
                 history: {},
-                cooldownEnd: null
+                cooldownEnd: null,
+                pauzetijdConfigured: false // Flag to show pauzetijd modal after first action
             };
 
             state.battles.push(newBattle);
@@ -2433,15 +2457,11 @@ function initScreen8Form() {
         presetsBtn.addEventListener('click', () => {
             // Open presets modal
             const presetsModal = document.getElementById('presets-modal');
-            const searchInput = document.getElementById('presets-search-input');
 
             if (presetsModal) {
-                // Override preset selection to fill onboarding form
-                const presetsList = document.getElementById('presets-list');
-
-                // Render presets
+                // Render presets for onboarding
                 renderPresetsForOnboarding();
-                presetsModal.classList.remove('hidden');
+                openModal(presetsModal);
             }
         });
     }
