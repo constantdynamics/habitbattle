@@ -2411,27 +2411,28 @@ function animateScreen5() {
 
 // Screen 6: Setup form with presets and green button
 function initScreen6Form() {
-    const nameInput = document.getElementById('onboard-habit-name');
-    const questionInput = document.getElementById('onboard-habit-question');
-    const startBtn = document.getElementById('onboard-start-btn');
-    const presetsBtn = document.getElementById('onboard-presets-btn');
+    // Use event delegation for reliable event handling
+    document.addEventListener('click', (e) => {
+        // Handle presets button click
+        if (e.target.id === 'onboard-presets-btn' || e.target.closest('#onboard-presets-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
 
-    function validateForm() {
-        if (startBtn) {
-            startBtn.disabled = !nameInput?.value.trim() || !questionInput?.value.trim();
+            const presetsModal = document.getElementById('presets-modal');
+            if (presetsModal) {
+                renderPresetsForOnboarding();
+                openModal(presetsModal);
+            }
+            return;
         }
-    }
 
-    if (nameInput) {
-        nameInput.addEventListener('input', validateForm);
-    }
+        // Handle start button click
+        if (e.target.id === 'onboard-start-btn' || e.target.closest('#onboard-start-btn')) {
+            const nameInput = document.getElementById('onboard-habit-name');
+            const questionInput = document.getElementById('onboard-habit-question');
+            const startBtn = document.getElementById('onboard-start-btn');
 
-    if (questionInput) {
-        questionInput.addEventListener('input', validateForm);
-    }
-
-    if (startBtn) {
-        startBtn.addEventListener('click', () => {
+            if (startBtn?.disabled) return;
             if (!nameInput?.value.trim() || !questionInput?.value.trim()) return;
 
             // Create the battle with default 10 min pauzetijd
@@ -2463,21 +2464,21 @@ function initScreen6Form() {
                 hideOnboarding();
                 showBattle(newBattle.id);
             }, 1500);
-        });
-    }
+        }
+    });
 
-    if (presetsBtn) {
-        presetsBtn.addEventListener('click', () => {
-            // Open presets modal
-            const presetsModal = document.getElementById('presets-modal');
+    // Input validation for enabling/disabling start button
+    document.addEventListener('input', (e) => {
+        if (e.target.id === 'onboard-habit-name' || e.target.id === 'onboard-habit-question') {
+            const nameInput = document.getElementById('onboard-habit-name');
+            const questionInput = document.getElementById('onboard-habit-question');
+            const startBtn = document.getElementById('onboard-start-btn');
 
-            if (presetsModal) {
-                // Render presets for onboarding
-                renderPresetsForOnboarding();
-                openModal(presetsModal);
+            if (startBtn) {
+                startBtn.disabled = !nameInput?.value.trim() || !questionInput?.value.trim();
             }
-        });
-    }
+        }
+    });
 }
 
 function renderPresetsForOnboarding() {
