@@ -1,4 +1,4 @@
-const CACHE_NAME = 'daily-battle-v2.4';
+const CACHE_NAME = 'daily-battle-v2.4.1';
 const ASSETS = [
     '/',
     '/index.html',

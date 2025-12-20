@@ -1258,6 +1258,9 @@ function initPresets() {
     const searchInput = document.getElementById('presets-search-input');
     const presetsList = document.getElementById('presets-list');
 
+    // Guard against missing elements
+    if (!presetsModal || !presetsList) return;
+
     function renderPresets(filter = '') {
         const filtered = filter
             ? BATTLE_PRESETS.filter(p =>
@@ -1302,15 +1305,19 @@ function initPresets() {
         });
     }
 
-    showPresetsBtn.addEventListener('click', () => {
-        searchInput.value = '';
-        renderPresets();
-        openModal(presetsModal);
-    });
+    if (showPresetsBtn) {
+        showPresetsBtn.addEventListener('click', () => {
+            if (searchInput) searchInput.value = '';
+            renderPresets();
+            openModal(presetsModal);
+        });
+    }
 
-    closePresetsBtn.addEventListener('click', () => {
-        closeModal(presetsModal);
-    });
+    if (closePresetsBtn) {
+        closePresetsBtn.addEventListener('click', () => {
+            closeModal(presetsModal);
+        });
+    }
 
     presetsModal.addEventListener('click', (e) => {
         if (e.target === presetsModal) {
@@ -1325,19 +1332,21 @@ function initPresets() {
         }
     });
 
-    searchInput.addEventListener('input', () => {
-        renderPresets(searchInput.value);
-    });
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            renderPresets(searchInput.value);
+        });
 
-    // Enter key selects first result
-    searchInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            const firstItem = presetsList.querySelector('.preset-item');
-            if (firstItem) {
-                firstItem.click();
+        // Enter key selects first result
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const firstItem = presetsList.querySelector('.preset-item');
+                if (firstItem) {
+                    firstItem.click();
+                }
             }
-        }
-    });
+        });
+    }
 }
 
 // Notifications
@@ -2441,6 +2450,10 @@ function initScreen6Form() {
             state.battles.push(newBattle);
             saveState();
             completeOnboarding();
+
+            // Close any open modals
+            const presetsModal = document.getElementById('presets-modal');
+            if (presetsModal) closeModal(presetsModal);
 
             // Show confetti
             showConfetti();
